@@ -1,133 +1,75 @@
 package com.catadmirer.infuseSMP.managers;
 
-import java.io.File;
-import org.bukkit.Bukkit;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.configuration.ConfigurationSection;
-import org.bukkit.configuration.file.FileConfiguration;
-import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.Recipe;
-import org.bukkit.inventory.ShapedRecipe;
 import com.catadmirer.infuseSMP.Infuse;
+import com.google.gson.Gson;
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import java.io.File;
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
 
 public class RecipeManager {
     private final Infuse plugin;
     private final File recipesFile;
-    private final FileConfiguration recipesConfig;
+    private static final Gson GSON = new GsonBuilder().setPrettyPrinting().create();
+    private JsonObject config = new JsonObject();
 
-    public RecipeManager(Infuse plugin) {
-        this.plugin = plugin;
+    public RecipeManager() {
+        this.plugin = Infuse.getInstance();
+        this.recipesFile = new File(plugin.getDataFolder(), "recipes.json");
+        load();
+    }
 
-        recipesFile = new File(plugin.getDataFolder(), "recipes.yml");
+    public void load() {
+        if (!recipesFile.getParentFile().exists()) {
+            recipesFile.getParentFile().mkdirs();
+        }
         if (!recipesFile.exists()) {
-            plugin.saveResource("recipes.yml", false);
+            save(); // Save empty defaults
         }
-
-        recipesConfig = YamlConfiguration.loadConfiguration(recipesFile);
+        try (FileReader reader = new FileReader(recipesFile)) {
+            config = JsonParser.parseReader(reader).getAsJsonObject();
+        } catch (IOException e) {
+            Infuse.LOGGER.error("Could not load recipes.json", e);
+        }
     }
 
-    /**
-     * Manager functionality for when the plugin is reloaded.
-     * 
-     * In this case, it unregisters all the recipes then adds them back.
-     */
+    public void save() {
+        try {
+            if (!recipesFile.exists()) {
+                recipesFile.getParentFile().mkdirs();
+                recipesFile.createNewFile();
+            }
+            try (FileWriter writer = new FileWriter(recipesFile)) {
+                GSON.toJson(config, writer);
+            }
+        } catch (IOException e) {
+            Infuse.LOGGER.error("Could not save recipes.json", e);
+        }
+    }
+
     public void reload() {
-        // Removing all the infuse recipes
-        for (EffectMapping effect : EffectMapping.values()) {
-            if (effect.isAugmented()) continue;
-            Bukkit.removeRecipe(getRecipeKey(effect), true);
-        }
-
-        // Adding back the infuse recipes
-        registerRecipes();
-    }
-
-    /** Registers the recipe for each effect. */
-    public void registerRecipes() {
-        for (EffectMapping effect : EffectMapping.values()) {
-            if (effect.isAugmented()) continue;
-            if (!isRecipeEnabled(effect)) continue;
-            ShapedRecipe recipe = getRecipe(effect);
-            
-            Bukkit.addRecipe(recipe);
-        }
+        load();
     }
 
     public boolean isRecipeEnabled(EffectMapping mapping) {
-        return recipesConfig.getBoolean(mapping.regular().getKey() + ".enabled", false);
+        String key = mapping.regular().getKey();
+        if (config.has(key) && config.getAsJsonObject(key).has("enabled")) {
+            return config.getAsJsonObject(key).get("enabled").getAsBoolean();
+        }
+        return false;
     }
 
-    public ShapedRecipe getRecipe(EffectMapping mapping) {
-        String baseKey = mapping.regular().getKey();
-        NamespacedKey recipeKey = new NamespacedKey(plugin, baseKey);
-        ShapedRecipe effectRecipe = new ShapedRecipe(recipeKey, mapping.regular().createItem());
-
-        effectRecipe.shape(recipesConfig.getStringList(baseKey + ".shape").toArray(String[]::new));
-        ConfigurationSection ingredientsConfig = recipesConfig.getConfigurationSection(baseKey + ".ingredients");
-        for (String key : ingredientsConfig.getKeys(false)) {
-            char ingredientLabel = key.charAt(0);
-            String materialName = ingredientsConfig.getString(key);
-            Material ingredientMaterial = Material.valueOf(materialName.toUpperCase());
-            effectRecipe.setIngredient(ingredientLabel, ingredientMaterial);
-        }
-
-        return effectRecipe;
+    // Dynamic recipe registration and management is handled differently in Fabric.
+    // For now, we stub these methods and rely on the crafting event to validate or generate items.
+    
+    public void registerRecipes() {
+        Infuse.LOGGER.info("Recipe registration should be done via datapacks in Fabric, but dynamically controlled.");
     }
 
     public void updateEnderRecipe() {
-        if (plugin.getDataManager().getExistingCount(EffectMapping.AUG_ENDER) > 0) {
-            ShapedRecipe enderRecipe = getRecipe(EffectMapping.ENDER);
-            Bukkit.removeRecipe(enderRecipe.getKey(), true);
-
-            String matName = recipesConfig.getString("ender.egg_replacement");
-            Material eggReplacement = Material.valueOf(matName.toUpperCase());
-
-            ConfigurationSection ingredientsConfig = recipesConfig.getConfigurationSection("ender.ingredients");
-            for (String key : ingredientsConfig.getKeys(false)) {
-                char ingredientLabel = key.charAt(0);
-                if (!ingredientsConfig.getString(key).equals("DRAGON_EGG")) continue;
-
-                enderRecipe.setIngredient(ingredientLabel, eggReplacement);
-            }
-
-            Bukkit.addRecipe(enderRecipe);
-        }
-    }
-
-    public NamespacedKey getRecipeKey(EffectMapping effect) {
-        return new NamespacedKey(plugin, effect.regular().getKey());
-    }
-
-    /**
-     * Gets the item to craft from an official Infuse recipe.
-     * This makes it easier to determine whether an infuse recipe should craft an augmented or regular effect.
-     * 
-     * @param recipe The infuse {@link Recipe} to determine the result for.
-     * 
-     * @return The corresponding {@link ItemStack} for the recipe, or null if the craft limit has been reached or the recipe is not an infuse recipe.
-     */
-    public ItemStack getItemToCraft(Recipe recipe) {
-        ItemStack item = recipe.getResult();
-        
-        // The returned EffectMapping should always be the regular form
-        EffectMapping effect = EffectMapping.fromItem(item);
-        if (effect == null) return null;
-        if (effect.isAugmented()) return null;
-
-        // Checking if the augmented limit has been reached
-        EffectMapping augEffect = effect.augmented();
-        if (plugin.getMainConfig().getCraftLimit(augEffect) > plugin.getDataManager().getExistingCount(augEffect)) {
-            return augEffect.createItem();
-        }
-
-        // Checking if the regular limit has been reached
-        if (plugin.getMainConfig().getCraftLimit(effect) > plugin.getDataManager().getExistingCount(effect)) {
-            return effect.createItem();
-        }
-
-        // Craft limits have been reached, return null
-        return null;
+        Infuse.LOGGER.info("Ender recipe update stubbed.");
     }
 }

@@ -1,54 +1,28 @@
 package com.catadmirer.infuseSMP.inventories;
 
-import com.catadmirer.infuseSMP.Message;
-import com.catadmirer.infuseSMP.util.InventoryUtils;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
-import org.jetbrains.annotations.NotNull;
+import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
-public class StationSelectionMenu implements InventoryHolder {
-    private final Inventory inventory;
-    private final Location standLocation;
+public class StationSelectionMenu extends SimpleGui {
+    public StationSelectionMenu(ServerPlayerEntity player) {
+        super(ScreenHandlerType.GENERIC_9X3, player, false);
+        this.setTitle(Text.literal("Station Selection"));
+        
+        net.minecraft.item.ItemStack brewingStand = new net.minecraft.item.ItemStack(net.minecraft.item.Items.BREWING_STAND);
+        brewingStand.set(net.minecraft.component.DataComponentTypes.ITEM_NAME, Text.literal("Brewing Stand"));
+        this.setSlot(11, brewingStand, (index, type, action, gui) -> {
+            // player.openHandledScreen(...) - This is complex for a non-block-based GUI.
+            // For now, we'll just close and tell them to use a real brewing stand or implementation-specific logic.
+            player.sendMessage(Text.literal("Use a real brewing stand for now."), true);
+            gui.close();
+        });
 
-    public StationSelectionMenu(Location standLocation) {
-        inventory = Bukkit.createInventory(this, 27, Component.text("Station Selection"));
-        this.standLocation = standLocation;
-
-        // Filling the inventory with a filler item.
-        InventoryUtils.fillInventory(inventory, InventoryUtils.createNoName(Material.GRAY_STAINED_GLASS_PANE));
-
-        // Creating the crafting table option
-        ItemStack craftingTable = new ItemStack(Material.CRAFTING_TABLE);
-        ItemMeta craftingMeta = craftingTable.getItemMeta();
-        craftingMeta.displayName(Message.toComponent("<dark_red>Crafting Table"));
-        craftingTable.setItemMeta(craftingMeta);
-
-        // Creating the brewing stand option
-        ItemStack brewingStand = new ItemStack(Material.BREWING_STAND);
-        ItemMeta brewingMeta = brewingStand.getItemMeta();
-        brewingMeta.displayName(Message.toComponent("<dark_red>Brewing Stand"));
-        brewingStand.setItemMeta(brewingMeta);
-
-        // Putting the options into the inventory
-        inventory.setItem(11, craftingTable);
-        inventory.setItem(15, brewingStand);
-
-        // Locking the inventory
-        InventoryUtils.lockInventory(inventory);
-    }
-
-    @Override
-    public @NotNull Inventory getInventory() {
-        return inventory;
-    }
-
-    public Location getStandLocation() {
-        return standLocation;
+        net.minecraft.item.ItemStack craftingTable = new net.minecraft.item.ItemStack(net.minecraft.item.Items.CRAFTING_TABLE);
+        craftingTable.set(net.minecraft.component.DataComponentTypes.ITEM_NAME, Text.literal("Effect Crafting"));
+        this.setSlot(15, craftingTable, (index, type, action, gui) -> {
+            new EffectChooser(player).open();
+        });
     }
 }

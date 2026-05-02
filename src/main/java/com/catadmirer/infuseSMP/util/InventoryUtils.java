@@ -1,77 +1,37 @@
 package com.catadmirer.infuseSMP.util;
 
-import net.kyori.adventure.text.Component;
-import org.bukkit.Material;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.ItemMeta;
+import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.text.Text;
 
 public class InventoryUtils {
-    /**
-     * Creates a decorative item with no name.
-     * 
-     * @param material The material to make the item with.
-     * 
-     * @return A decorative item with no name.
-     */
-    public static ItemStack createNoName(Material material) {
-        ItemStack pane = new ItemStack(material);
-        ItemMeta meta = pane.getItemMeta();
-        meta.displayName(Component.empty());
-        pane.setItemMeta(meta);
-        return pane;
+    public static ItemStack createNoName(Item item) {
+        ItemStack stack = new ItemStack(item);
+        stack.set(DataComponentTypes.ITEM_NAME, Text.empty());
+        return stack;
     }
 
-    /**
-     * Fills an inventory with a certain item.
-     * 
-     * @param inventory The inventory to fill.
-     * @param item The item to fill the inventory with.
-     */
-    public static void fillInventory(Inventory inventory, ItemStack item) {
-        for (int i = 0; i < inventory.getSize(); i++) {
-            inventory.setItem(i, item);
+    public static void fillInventory(SimpleGui gui, ItemStack item) {
+        for (int i = 0; i < gui.getSize(); i++) {
+            gui.setSlot(i, item.copy());
         }
     }
 
-    /**
-     * Putting an item into multiple slots of an inventory.
-     * 
-     * @param inventory The inventory to place the item into.
-     * @param slots The list of slots to place the item.
-     * @param item The item to put into the inventory
-     */
-    public static void setItems(Inventory inventory, int[] slots, ItemStack item) {
-        for (int slot : slots) inventory.setItem(slot, item);
+    public static void setItems(SimpleGui gui, int[] slots, ItemStack item) {
+        for (int slot : slots) {
+            gui.setSlot(slot, item.copy());
+        }
     }
 
-    /**
-     * Utility function that fills all empty slots of an inventory with red stained glass panes with
-     * empty names.
-     * 
-     * @param inventory The inventory to fill with panes.
-     */
-    public static void fillRemainingSlots(Inventory inventory) {
-        ItemStack stainedGlassPane = createNoName(Material.RED_STAINED_GLASS_PANE);
-
-        for (int i = 0; i < inventory.getSize(); i++) {
-            if (inventory.getItem(i) == null) {
-                inventory.setItem(i, stainedGlassPane);
+    public static void fillRemainingSlots(SimpleGui gui) {
+        ItemStack pane = createNoName(Items.RED_STAINED_GLASS_PANE);
+        for (int i = 0; i < gui.getSize(); i++) {
+            if (gui.getSlot(i) == null || gui.getSlot(i).getItemStack().isEmpty()) {
+                gui.setSlot(i, pane.copy());
             }
-        }
-    }
-
-    /**
-     * "Locks" an inventory by setting the stack size for each item to 1.
-     * 
-     * @param inventory The inventory to lock.
-     */
-    public static void lockInventory(Inventory inventory) {
-        for (ItemStack item : inventory.getContents()) {
-            if (item == null) continue;
-            item.editMeta(meta -> {
-                meta.setMaxStackSize(1);
-            });
         }
     }
 }

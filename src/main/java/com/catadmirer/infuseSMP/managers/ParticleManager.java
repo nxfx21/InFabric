@@ -1,68 +1,63 @@
 package com.catadmirer.infuseSMP.managers;
 
 import com.catadmirer.infuseSMP.Infuse;
-import org.bukkit.Color;
-import org.bukkit.Location;
-import org.bukkit.Particle;
-import org.bukkit.Particle.DustOptions;
-import org.bukkit.entity.Player;
+import net.minecraft.particle.DustParticleEffect;
+import net.minecraft.particle.EntityEffectParticleEffect;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import net.minecraft.util.math.Vec3d;
+
+import java.awt.Color;
 
 public class ParticleManager {
-    private final Infuse plugin;
 
-    public ParticleManager(Infuse plugin) {
-        this.plugin = plugin;
+    public ParticleManager() {
     }
 
-    public void spawnEffectParticles(Player player, String slot) {
-        EffectMapping effect = plugin.getDataManager().getEffect(player.getUniqueId(), slot);
+    public void spawnEffectParticles(ServerPlayerEntity player, String slot) {
+        EffectMapping effect = Infuse.getInstance().getDataManager().getEffect(player.getUuid(), slot);
         if (effect == null) return;
 
-        // Handling special particles for ender effect
-        // TODO: Decide whether or not to keep this
+        ServerWorld world = (ServerWorld) player.getWorld();
+
         if (effect == EffectMapping.ENDER || effect == EffectMapping.AUG_ENDER) {
-            player.getWorld().spawnParticle(Particle.REVERSE_PORTAL, player.getLocation().add(0, 1, 0), 32, 0.3, 0.5, 0.3, 0);
+            world.spawnParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY() + 1, player.getZ(), 32, 0.3, 0.5, 0.3, 0);
             return;
         }
 
-        player.getWorld().spawnParticle(Particle.ENTITY_EFFECT, player.getLocation().add(0, 1, 0), 2, 0.3, 0.5, 0.3, 0.1, Color.fromARGB(effect.getColor().getRGB()));
+        int argb = effect.getColor().getRGB();
+        // Fabric EntityEffectParticleEffect
+        EntityEffectParticleEffect particleEffect = EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, argb);
+        world.spawnParticles(particleEffect, player.getX(), player.getY() + 1, player.getZ(), 2, 0.3, 0.5, 0.3, 0.1);
     }
 
-    /**
-     * Spawns a cloud of effect particles around the player.
-     *
-     * @param player The player to spawn entity effect particles on.
-     * @param color The color the particles should be.
-     */
-    public static void spawnEffectCloud(Player player, Color color) {
-        player.getWorld().spawnParticle(Particle.ENTITY_EFFECT, player.getLocation().add(0, 1, 0), 30, 0.5, 0.6, 0.5, 0, color);
+    public static void spawnEffectCloud(ServerPlayerEntity player, Color color) {
+        ServerWorld world = (ServerWorld) player.getWorld();
+        EntityEffectParticleEffect particleEffect = EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, color.getRGB());
+        world.spawnParticles(particleEffect, player.getX(), player.getY() + 1, player.getZ(), 30, 0.5, 0.6, 0.5, 0);
     }
 
-    public static void drawLine(Location start, Location end) {
-        drawLine(start, end, 5, new DustOptions(Color.WHITE, 1));
+    public static void drawLine(ServerWorld world, Vec3d start, Vec3d end) {
+        drawLine(world, start, end, 5, 0xFFFFFF, 1.0f);
     }
 
-    public static void drawLine(Location start, Location end, int count) {
-        drawLine(start, end, count, new DustOptions(Color.WHITE, 1));
+    public static void drawLine(ServerWorld world, Vec3d start, Vec3d end, int count) {
+        drawLine(world, start, end, count, 0xFFFFFF, 1.0f);
     }
 
-    public static void drawLine(Location start, Location end, DustOptions dustOptions) {
-        drawLine(start, end, 5, dustOptions);
-    }
-
-    public static void drawLine(Location start, Location end, int count, DustOptions dustOptions) {
-        if (!start.getWorld().equals(end.getWorld())) {
-            Infuse.LOGGER.debug("Cannot draw lines between two worlds!");
-            return;
-        }
-
-        Location diff = end.subtract(start);
+    public static void drawLine(ServerWorld world, Vec3d start, Vec3d end, int count, int color, float scale) {
+        Vec3d diff = end.subtract(start);
         int points = (int) (diff.length() * 10);
-        Location step = diff.multiply(1.0 / points);
-        for (int i = 0; i < points; i++) {
-            start.getWorld().spawnParticle(Particle.DUST, start, count, 0, 0, 0, 0, dustOptions);
-            start.add(step);
+        if (points == 0) return;
+        Vec3d step = diff.multiply(1.0 / points);
+        
+        DustParticleEffect dust = new DustParticleEffect(color, scale);
+        
+        Vec3d current = start;
+        for (int i = 0; i <= points; i++) {
+            world.spawnParticles(dust, current.getX(), current.getY(), current.z, count, 0, 0, 0, 0);
+            current = current.add(step);
         }
-        start.getWorld().spawnParticle(Particle.DUST, end, count, 0, 0, 0, 0, dustOptions);
     }
 }

@@ -1,66 +1,54 @@
 plugins {
-    id 'java'
-    id("xyz.jpenilla.run-paper") version "2.3.1"
-    id("io.papermc.paperweight.userdev") version "2.0.0-beta.21"
+	id 'fabric-loom' version '1.9-SNAPSHOT'
+	id 'maven-publish'
 }
 
-group = 'com.catadmirer'
-version = '2.4.3'
+version = project.mod_version
+group = project.maven_group
+
+base {
+	archivesName = project.archives_base_name
+}
 
 repositories {
-    maven {
-        url = "https://repo.extendedclip.com/content/repositories/placeholderapi/"
-    }
-    maven {
-        name = "papermc-repo"
-        url = "https://repo.papermc.io/repository/maven-public/"
-    }
+	maven { url "https://maven.nucleoid.xyz/" }
+	maven { url "https://api.modrinth.com/m" }
+    mavenCentral()
 }
 
 dependencies {
-    compileOnly "me.clip:placeholderapi:${placeholderAPIVersion}"
-    paperweight.paperDevBundle("${minecraftVersion}-R0.1-SNAPSHOT")
-}
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings "net.fabricmc:yarn:${project.yarn_mappings}:v2"
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_version}"
 
-tasks {
-    runServer {
-        // Configure the Minecraft version for our task.
-        // This is the only required configuration besides applying the plugin.
-        // Your plugin's jar (or shadowJar if present) will be used automatically.
-        minecraftVersion("1.21.11")
-        jvmArgs '-Dlog4j.configurationFile=log4j2.xml'
-    }
-}
-
-tasks.assemble {
-  dependsOn(tasks.reobfJar)
-}
-
-def targetJavaVersion = 21
-java {
-    toolchain {
-        languageVersion = JavaLanguageVersion.of(targetJavaVersion)
-    }
-    sourceCompatibility = JavaVersion.toVersion(targetJavaVersion)
-    targetCompatibility = JavaVersion.toVersion(targetJavaVersion)
-}
-
-
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-    options.release.set(targetJavaVersion)
+    // SGUI
+    modImplementation include("eu.pb4:sgui:${project.sgui_version}")
+    
+    // PlaceholderAPI
+    modImplementation include("eu.pb4:placeholder-api:${project.placeholder_api_version}")
+    
+    // SnakeYAML for parsing the old config files
+    implementation include("org.yaml:snakeyaml:2.3")
 }
 
 processResources {
-    def props = [version: version, mcVersion: minecraftVersion]
-    inputs.properties props
-    filteringCharset = 'UTF-8'
-    filesMatching('plugin.yml') {
-        expand props
-    }
+	inputs.property "version", project.version
+	filesMatching("fabric.mod.json") {
+		expand "version": project.version
+	}
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	withSourcesJar()
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
 }
 
 task resetAndRun {
-    delete "run/plugins/$rootProject.name"
-    finalizedBy(runServer)
+    dependsOn(runServer)
 }

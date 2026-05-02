@@ -1,43 +1,17 @@
 package com.catadmirer.infuseSMP.events;
 
 import com.catadmirer.infuseSMP.managers.EffectMapping;
-import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.HandlerList;
-import org.jetbrains.annotations.NotNull;
+import net.fabricmc.fabric.api.event.Event;
+import net.fabricmc.fabric.api.event.EventFactory;
+import net.minecraft.server.network.ServerPlayerEntity;
 
-public class EffectUnequipEvent extends Event {
+public interface EffectUnequipEvent {
+    Event<EffectUnequipEvent> EVENT = EventFactory.createArrayBacked(EffectUnequipEvent.class,
+            (listeners) -> (player, effect, slot) -> {
+                for (EffectUnequipEvent listener : listeners) {
+                    listener.onUnequip(player, effect, slot);
+                }
+            });
 
-    private static final HandlerList HANDLER_LIST = new HandlerList();
-
-    private final Player player;
-    private final EffectMapping effect;
-    private final String slot;
-
-    public EffectUnequipEvent(Player player, EffectMapping effect, String slot) {
-        this.player = player;
-        this.effect = effect;
-        this.slot = slot;
-    }
-
-    public Player getPlayer() {
-        return player;
-    }
-
-    public EffectMapping getEffect() {
-        return effect;
-    }
-
-    public String getSlot() {
-        return slot;
-    }
-
-    @Override
-    public @NotNull HandlerList getHandlers() {
-        return HANDLER_LIST;
-    }
-
-    public static @NotNull HandlerList getHandlerList() {
-        return HANDLER_LIST;
-    }
+    void onUnequip(ServerPlayerEntity player, EffectMapping effect, String slot);
 }

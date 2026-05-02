@@ -1,0 +1,33 @@
+{
+  "schemaVersion": 1,
+  "id": "infusesmp",
+  "version": "${version}",
+  "name": "Infuse",
+  "description": "InfuseSMP Fabric Port",
+  "authors": [
+    "CatAdmirer",
+    "TurboJax"
+  ],
+  "contact": {
+    "homepage": "",
+    "sources": ""
+  },
+  "license": "All Rights Reserved",
+  "icon": "assets/infusesmp/icon.png",
+  "environment": "server",
+  "entrypoints": {
+    "main": [
+      "com.catadmirer.infuseSMP.Infuse"
+    ]
+  },
+  "mixins": [
+    "infusesmp.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=0.16.10",
+    "minecraft": ">=1.21.4",
+    "fabric-api": "*",
+    "sgui": "*",
+    "placeholder-api": "*"
+  }
+}

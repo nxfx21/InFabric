@@ -1,43 +1,39 @@
 package com.catadmirer.infuseSMP.managers;
 
-import com.catadmirer.infuseSMP.effects.*;
-import com.catadmirer.infuseSMP.extraeffects.*;
-import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.Message.MessageType;
-import java.awt.Color;
-import java.util.function.BiConsumer;
-import java.util.function.Consumer;
-import net.kyori.adventure.bossbar.BossBar;
-import org.bukkit.Material;
-import org.bukkit.NamespacedKey;
-import org.bukkit.entity.Player;
-import org.bukkit.inventory.ItemFlag;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.inventory.meta.PotionMeta;
-import org.bukkit.persistence.PersistentDataType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.component.type.LoreComponent;
+import net.minecraft.item.ItemStack;
+import net.minecraft.item.Items;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.util.Identifier;
 import org.jetbrains.annotations.NotNull;
 import org.jetbrains.annotations.Nullable;
 
-public enum EffectMapping {
-    // Defining regular effects
-    EMERALD  ("emerald",   1, Color.GREEN,         BossBar.Color.GREEN,  Emerald::applyPassiveEffects,      Emerald::activateSpark),
-    ENDER    ("ender",     2, new Color(0x800080), BossBar.Color.PURPLE, Ender::applyPassiveEffects,        Ender::activateSpark),
-    FEATHER  ("feather",   3, new Color(0xBEA3CA), BossBar.Color.WHITE,  p -> {},        Feather::activateSpark),
-    FIRE     ("fire",      4, new Color(0xEE5522), BossBar.Color.RED,    Fire::applyPassiveEffects,         Fire::activateSpark),
-    FROST    ("frost",     5, new Color(0x55FFFF), BossBar.Color.BLUE,   Frost::applyPassiveEffects,        Frost::activateSpark),
-    HASTE    ("haste",     6, new Color(0xFFCC33), BossBar.Color.YELLOW, Haste::applyPassiveEffects,        Haste::activateSpark),
-    HEART    ("heart",     7, Color.RED,           BossBar.Color.RED,    Heart::applyPassiveEffects,        Heart::activateSpark),
-    INVIS    ("invis",     8, new Color(0xAA00AA), BossBar.Color.PURPLE, Invisibility::applyPassiveEffects, Invisibility::activateSpark),
-    OCEAN    ("ocean",     9, new Color(0x0066FF), BossBar.Color.BLUE,   Ocean::applyPassiveEffects,        Ocean::activateSpark),
-    REGEN    ("regen",    10, new Color(0xFF5555), BossBar.Color.PINK,   p -> {},        Regen::activateSpark),
-    SPEED    ("speed",    11, new Color(0xEEBB77), BossBar.Color.YELLOW, Speed::applyPassiveEffects,        Speed::activateSpark),
-    STRENGTH ("strength", 12, new Color(0x800000), BossBar.Color.RED,    p -> {},     Strength::activateSpark),
-    THUNDER  ("thunder",  13, Color.YELLOW,        BossBar.Color.YELLOW, p -> {},      Thunder::activateSpark),
-    APOPHIS  ("apophis",  14, new Color(0x440044), BossBar.Color.PURPLE, Apophis::applyPassiveEffects,      Apophis::activateSpark),
-    THIEF    ("thief",    15, new Color(0xAA0000), BossBar.Color.RED,    Thief::applyPassiveEffects,        Thief::activateSpark),
+import java.awt.Color;
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
-    // Defining augmented effects
+public enum EffectMapping {
+    EMERALD  ("emerald",   1, Color.GREEN,         com.catadmirer.infuseSMP.effects.Emerald::applyPassiveEffects,      com.catadmirer.infuseSMP.effects.Emerald::activateSpark),
+    ENDER    ("ender",     2, new Color(0x800080), com.catadmirer.infuseSMP.effects.Ender::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Ender::activateSpark),
+    FEATHER  ("feather",   3, new Color(0xBEA3CA), com.catadmirer.infuseSMP.effects.Feather::applyPassiveEffects,      com.catadmirer.infuseSMP.effects.Feather::activateSpark),
+    FIRE     ("fire",      4, new Color(0xEE5522), com.catadmirer.infuseSMP.effects.Fire::applyPassiveEffects,         com.catadmirer.infuseSMP.effects.Fire::activateSpark),
+    FROST    ("frost",     5, new Color(0x55FFFF), com.catadmirer.infuseSMP.effects.Frost::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Frost::activateSpark),
+    HASTE    ("haste",     6, new Color(0xFFCC33), com.catadmirer.infuseSMP.effects.Haste::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Haste::activateSpark),
+    HEART    ("heart",     7, Color.RED,           com.catadmirer.infuseSMP.effects.Heart::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Heart::activateSpark),
+    INVIS    ("invis",     8, new Color(0xAA00AA), com.catadmirer.infuseSMP.effects.Invisibility::applyPassiveEffects, com.catadmirer.infuseSMP.effects.Invisibility::activateSpark),
+    OCEAN    ("ocean",     9, new Color(0x0066FF), com.catadmirer.infuseSMP.effects.Ocean::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Ocean::activateSpark),
+    REGEN    ("regen",    10, new Color(0xFF5555), com.catadmirer.infuseSMP.effects.Regen::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Regen::activateSpark),
+    SPEED    ("speed",    11, new Color(0xEEBB77), com.catadmirer.infuseSMP.effects.Speed::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Speed::activateSpark),
+    STRENGTH ("strength", 12, new Color(0x800000), com.catadmirer.infuseSMP.effects.Strength::applyPassiveEffects,     com.catadmirer.infuseSMP.effects.Strength::activateSpark),
+    THUNDER  ("thunder",  13, Color.YELLOW,        com.catadmirer.infuseSMP.effects.Thunder::applyPassiveEffects,      com.catadmirer.infuseSMP.effects.Thunder::activateSpark),
+    APOPHIS  ("apophis",  14, new Color(0x440044), com.catadmirer.infuseSMP.effects.Apophis::applyPassiveEffects,      com.catadmirer.infuseSMP.effects.Apophis::activateSpark),
+    THIEF    ("thief",    15, new Color(0xAA0000), com.catadmirer.infuseSMP.effects.Thief::applyPassiveEffects,        com.catadmirer.infuseSMP.effects.Thief::activateSpark),
+
     AUG_EMERALD(EMERALD),
     AUG_ENDER(ENDER),
     AUG_FEATHER(FEATHER),
@@ -54,48 +50,41 @@ public enum EffectMapping {
     AUG_APOPHIS(APOPHIS),
     AUG_THIEF(THIEF);
 
-    public static final NamespacedKey AUG_MODEL = new NamespacedKey("infuse", "aug");
+    public static final Identifier AUG_MODEL = Identifier.of("infuse", "aug");
 
     private final String key;
     private final int id;
     private final Color color;
-    private final BossBar.Color ritualColor;
-    private final Consumer<Player> passiveFunction;
-    private final BiConsumer<Boolean,Player> sparkFunction;
+    private final String icon;
+    private final String activeIcon;
+    private final Consumer<ServerPlayerEntity> passiveFunction;
+    private final BiConsumer<Boolean,ServerPlayerEntity> sparkFunction;
 
     private EffectMapping regular;
     private EffectMapping augmented;
 
-    /**
-     * Constructor for regular effects.
-     * 
-     * @param key The base key for the effect.
-     * @param id The id for the effect.
-     * @param potionColor The color for the potion and related chat messages.
-     * @param ritualColor The bossbar color to use during rituals.
-     */
-    private EffectMapping(String key, int id, Color potionColor, BossBar.Color ritualColor, Consumer<Player> passiveFunction, BiConsumer<Boolean,Player> sparkFunction) {
+    private EffectMapping(String key, int id, Color color, Consumer<ServerPlayerEntity> passiveFunction, BiConsumer<Boolean,ServerPlayerEntity> sparkFunction) {
+        this(key, id, color, "\ue901", "\ue902", passiveFunction, sparkFunction);
+    }
+
+    private EffectMapping(String key, int id, Color color, String icon, String activeIcon, Consumer<ServerPlayerEntity> passiveFunction, BiConsumer<Boolean,ServerPlayerEntity> sparkFunction) {
         this.key = key;
         this.id = id;
-        this.color = potionColor;
-        this.ritualColor = ritualColor;
+        this.color = color;
+        this.icon = icon;
+        this.activeIcon = activeIcon;
         this.passiveFunction = passiveFunction;
         this.sparkFunction = sparkFunction;
 
         regular = this;
     }
 
-    /**
-     * Constructor for augmented effects.
-     * Attributes from the base mapping will be copied to this one.
-     * 
-     * @param base The base effect mapping for this augmented effect.
-     */
     private EffectMapping(EffectMapping base) {
         this.key = "aug_" + base.key;
         this.id = base.id;
         this.color = base.color;
-        this.ritualColor = base.ritualColor;
+        this.icon = base.icon;
+        this.activeIcon = base.activeIcon;
         this.passiveFunction = base.passiveFunction;
         this.sparkFunction = base.sparkFunction;
 
@@ -104,47 +93,26 @@ public enum EffectMapping {
         base.augmented = this;
     }
 
-    /**
-     * Getting the key for the effect.
-     * 
-     * @return The key for the effect.
-     */
     public String getKey() {
         return key;
     }
 
-    /**
-     * Getting the id for the effect.
-     * 
-     * @return The id for the effect.
-     */
     public int getId() {
         return id;
     }
 
-    /**
-     * Getting the color for the effect.
-     * 
-     * @return The color for the effect.
-     */
     public Color getColor() {
         return color;
     }
 
-    /**
-     * Getting the boss bar color for rituals.
-     *
-     * @return The boss bar color for rituals.
-     */
-    public BossBar.Color getRitualColor() {
-        return ritualColor;
+    public String getIcon() {
+        return icon;
     }
 
-    /**
-     * Getting the name of the effect from the config.
-     * 
-     * @return The name of the effect as defined in the config.
-     */
+    public String getActiveIcon() {
+        return activeIcon;
+    }
+
     @NotNull
     public Message getName() {
         return switch (this) {
@@ -181,11 +149,6 @@ public enum EffectMapping {
         };
     }
 
-    /**
-     * Getting the lore of the effect from the config.
-     * 
-     * @return The lore of the effect as defined in the config.
-     */
     public Message getLore() {
         return switch (this) {
             case EMERALD -> new Message(MessageType.EMERALD_LORE);
@@ -221,150 +184,55 @@ public enum EffectMapping {
         };
     }
 
-    public char getIcon() {
-        return (char) Integer.parseInt("E" + (isAugmented() ? 2 : 0) + String.format("%02d", getId()), 16);
-    }
+    public EffectMapping regular() { return regular; }
+    public EffectMapping augmented() { return augmented; }
+    public boolean isAugmented() { return this == augmented; }
 
-    public char getActiveIcon() {
-        return (char) Integer.parseInt("E" + (isAugmented() ? 3 : 1) + String.format("%02d", getId()), 16);
-    }
-
-    /**
-     * Getting the effect in its regular form.
-     * If the enum is already the regular form, it returns itself.
-     * 
-     * @return The regular version of the effect.
-     */
-    public EffectMapping regular() {
-        return regular;
-    }
-
-    /**
-     * Getting the effect in its augmented form.
-     * If the enum is already the augmented form, it returns itself.
-     * 
-     * @return The augmented version of the effect.
-     */
-    public EffectMapping augmented() {
-        return augmented;
-    }
-
-    /**
-     * Gets whether or not this effect is augmented.
-     * 
-     * @return Whether or not this effect is augmented.
-     */
-    public boolean isAugmented() {
-        return this == augmented;
-    }
-
-
-    /**
-     * Creates the effect as a potion item.
-     * 
-     * @return An {@link ItemStack} instance for a player to use to get an effect.
-     */
     @NotNull
     public ItemStack createItem() {
-        ItemStack effectItem = new ItemStack(Material.POTION);
-        PotionMeta meta = (PotionMeta) effectItem.getItemMeta();
+        ItemStack item = new ItemStack(Items.POTION);
+        item.set(DataComponentTypes.ITEM_NAME, getName().toComponent());
+        item.set(DataComponentTypes.LORE, new LoreComponent(getLore().toComponentList()));
 
-        if (meta != null) {
-            // Setting the usual data
-            meta.displayName(getName().toComponent());
-            meta.lore(getLore().toComponentList());
-            meta.setColor(org.bukkit.Color.fromARGB(color.getRGB()));
-            meta.getPersistentDataContainer().set(Infuse.EFFECT_KEY, PersistentDataType.STRING, key);
-            meta.addItemFlags(ItemFlag.HIDE_ADDITIONAL_TOOLTIP);
+        NbtCompound nbt = new NbtCompound();
+        nbt.putString("infuse:effect_key", key);
+        item.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
 
-            // Applying the custom model if the key has the "aug_" prefix
-            if (this == augmented) {
-                meta.setItemModel(AUG_MODEL);
-            }
-
-            effectItem.setItemMeta(meta);
-        }
-
-        return effectItem;
+        return item;
     }
 
-    public void applyPassiveEffects(Player player) {
+    public void applyPassiveEffects(ServerPlayerEntity player) {
         passiveFunction.accept(player);
     }
 
-    /**
-     * Activates the spark for the player.
-     * 
-     * @param player The player to activate the spark ability for.
-     */
-    public void activateSpark(Player player) {
+    public void activateSpark(ServerPlayerEntity player) {
         sparkFunction.accept(isAugmented(), player);
     }
 
-    /**
-     * Checks if an {@link ItemStack} was created by this effect.
-     * 
-     * @param item The item to check.
-     * 
-     * @return Whether or not the item was created by this effect.
-     */
     public boolean isEffect(@Nullable ItemStack item) {
-        if (item == null) return false;
-        if (item.getType() != Material.POTION) return false;
-        if (!item.hasItemMeta()) return false;
-
-        return key.equals(item.getItemMeta().getPersistentDataContainer().get(Infuse.EFFECT_KEY, PersistentDataType.STRING));
+        if (item == null || item.isEmpty() || !item.isOf(Items.POTION)) return false;
+        NbtComponent data = item.get(DataComponentTypes.CUSTOM_DATA);
+        if (data == null) return false;
+        NbtCompound nbt = data.copyNbt();
+        return key.equals(nbt.getString("infuse:effect_key"));
     }
 
-    /**
-     * Gets an {@link EffectMapping} from an {@link ItemStack}.
-     * 
-     * @param item The item to get the effect from.
-     * 
-     * @return The effect mapping the item corresponds to.  Returns null if the item is null or has an invalid effect key.
-     */
     @Nullable
     public static EffectMapping fromItem(@Nullable ItemStack item) {
-        if (item == null) return null;
-        if (item.getType() != Material.POTION) return null;
-        if (!item.hasItemMeta()) return null;
-
-        String key = item.getItemMeta().getPersistentDataContainer().get(Infuse.EFFECT_KEY, PersistentDataType.STRING);
-        if (key == null) return null;
-
+        if (item == null || item.isEmpty() || !item.isOf(Items.POTION)) return null;
+        NbtComponent data = item.get(DataComponentTypes.CUSTOM_DATA);
+        if (data == null) return null;
+        NbtCompound nbt = data.copyNbt();
+        String key = nbt.getString("infuse:effect_key");
+        if (key == null || key.isEmpty()) return null;
         return fromEffectKey(key);
     }
 
-    /**
-     * Gets an {@link EffectMapping} from the name of an effect.
-     * 
-     * @param name The name of the effect.
-     * 
-     * @return The effect mapping the item corresponds to.  Returns null if the name is not shared with any effect.
-     */
-    @Nullable
-    public static EffectMapping fromEffectName(@Nullable String name) {
-        for (EffectMapping mapping : values()) {
-            
-            if (mapping.getName().equals(name)) return mapping;
-        }
-
-        return null;
-    }
-
-    /**
-     * Gets an {@link EffectMapping} from the effect's key.
-     * 
-     * @param key The key of the effect.
-     * 
-     * @return The effect mapping the item corresponds to.  Returns null if the key is invalid.
-     */
     @Nullable
     public static EffectMapping fromEffectKey(@Nullable String key) {
         for (EffectMapping mapping : values()) {
             if (mapping.getKey().equalsIgnoreCase(key)) return mapping;
         }
-
         return null;
     }
 }

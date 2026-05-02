@@ -1,14 +1,11 @@
-# Removes testing server
-run/
-
-# Removing build files
+# Removing development files
 bin/
 build/
 .gradle/
-
-# Removing ide-specific configs
+run/
 .idea/
 .vscode/
+*.log
 
 # Preserves eula and any dependencies
 !run/eula.txt

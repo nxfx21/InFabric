@@ -1,71 +1,86 @@
 package com.catadmirer.infuseSMP.util;
 
-import com.destroystokyo.paper.MaterialSetTag;
-import org.bukkit.NamespacedKey;
-import org.bukkit.enchantments.Enchantment;
-import org.bukkit.entity.HumanEntity;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.persistence.PersistentDataType;
+import net.minecraft.component.DataComponentTypes;
+import net.minecraft.component.type.NbtComponent;
+import net.minecraft.component.type.ItemEnchantmentsComponent;
+import net.minecraft.enchantment.Enchantment;
+import net.minecraft.item.ItemStack;
+import net.minecraft.nbt.NbtCompound;
+import net.minecraft.registry.entry.RegistryEntry;
+import net.minecraft.registry.tag.ItemTags;
+import net.minecraft.server.network.ServerPlayerEntity;
 
 public class ItemUtil {
     public static boolean isSword(ItemStack item) {
-        if (item == null) return false;
-
-        return MaterialSetTag.ITEMS_SWORDS.isTagged(item.getType());
+        return item != null && item.isIn(ItemTags.SWORDS);
     }
 
     public static boolean isPickaxe(ItemStack item) {
-        if (item == null) return false;
-
-        return MaterialSetTag.ITEMS_PICKAXES.isTagged(item.getType());
+        return item != null && item.isIn(ItemTags.PICKAXES);
     }
 
     public static boolean isAxe(ItemStack item) {
-        if (item == null) return false;
-
-        return MaterialSetTag.ITEMS_AXES.isTagged(item.getType());
+        return item != null && item.isIn(ItemTags.AXES);
     }
 
     public static boolean isShovel(ItemStack item) {
-        if (item == null) return false;
-
-        return MaterialSetTag.ITEMS_SHOVELS.isTagged(item.getType());
+        return item != null && item.isIn(ItemTags.SHOVELS);
     }
 
     public static boolean isHoe(ItemStack item) {
-        if (item == null) return false;
-
-        return MaterialSetTag.ITEMS_HOES.isTagged(item.getType());
+        return item != null && item.isIn(ItemTags.HOES);
     }
 
-    public static void giveOrDropItem(HumanEntity player, ItemStack... items) {
-        player.getInventory().addItem(items).forEach((i, extra) -> player.getWorld().dropItem(player.getLocation(), extra));
+    public static void giveOrDropItem(ServerPlayerEntity player, ItemStack... items) {
+        for (ItemStack item : items) {
+            if (!player.getInventory().insertStack(item)) {
+                player.dropItem(item, false);
+            }
+        }
     }
 
-    public static void applySpecialEnchantment(ItemStack item, NamespacedKey key, Enchantment enchantment, int newLevel) {
-        // Skipping if the key was already applied
-        if (item.getPersistentDataContainer().has(key)) return;
-
-        // Skipping if the enchantment is already higher than the new level
-        if (item.getEnchantmentLevel(enchantment) >= newLevel) return;
-
-        item.editMeta(meta -> {
-            meta.getPersistentDataContainer().set(key, PersistentDataType.INTEGER, item.getEnchantmentLevel(enchantment));
-            meta.removeEnchant(enchantment);
-            meta.addEnchant(enchantment, newLevel, true);
-        });
+    public static void applySpecialEnchantment(ItemStack item, String key, RegistryEntry<Enchantment> enchantment, int newLevel) {
+        NbtComponent customData = item.getOrDefault(DataComponentTypes.CUSTOM_DATA, NbtComponent.DEFAULT);
+        NbtCompound nbt = customData.copyNbt();
+        
+        if (nbt.contains(key)) return;
+        
+        ItemEnchantmentsComponent enchantments = item.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
+        int oldLevel = enchantments.getLevel(enchantment);
+        
+        if (oldLevel >= newLevel) return;
+        
+        nbt.putInt(key, oldLevel);
+        item.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+        
+        ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(enchantments);
+        builder.set(enchantment, newLevel);
+        item.set(DataComponentTypes.ENCHANTMENTS, builder.build());
     }
 
-    public static void removeSpecialEnchant(ItemStack item, NamespacedKey key, Enchantment enchantment) {
-        // Skipping if the item doesn't have the key
-        if (!item.getPersistentDataContainer().has(key)) return;
-
-        item.editMeta(meta -> {
-            int oldLevel = meta.getPersistentDataContainer().get(key, PersistentDataType.INTEGER);
-            meta.getPersistentDataContainer().remove(key);
-
-            meta.removeEnchant(enchantment);
-            meta.addEnchant(enchantment, oldLevel, true);
-        });
+    public static void removeSpecialEnchant(ItemStack item, String key, RegistryEntry<Enchantment> enchantment) {
+        NbtComponent customData = item.get(DataComponentTypes.CUSTOM_DATA);
+        if (customData == null) return;
+        
+        NbtCompound nbt = customData.copyNbt();
+        if (!nbt.contains(key)) return;
+        
+        int oldLevel = nbt.getInt(key);
+        nbt.remove(key);
+        
+        if (nbt.isEmpty()) {
+            item.remove(DataComponentTypes.CUSTOM_DATA);
+        } else {
+            item.set(DataComponentTypes.CUSTOM_DATA, NbtComponent.of(nbt));
+        }
+        
+        ItemEnchantmentsComponent enchantments = item.getOrDefault(DataComponentTypes.ENCHANTMENTS, ItemEnchantmentsComponent.DEFAULT);
+        ItemEnchantmentsComponent.Builder builder = new ItemEnchantmentsComponent.Builder(enchantments);
+        if (oldLevel > 0) {
+            builder.set(enchantment, oldLevel);
+        } else {
+            builder.remove(e -> e.equals(enchantment));
+        }
+        item.set(DataComponentTypes.ENCHANTMENTS, builder.build());
     }
 }

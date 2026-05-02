@@ -1,66 +1,88 @@
 package com.catadmirer.infuseSMP;
 
-import com.catadmirer.infuseSMP.effects.Ender;
-import com.catadmirer.infuseSMP.effects.Heart;
-import com.catadmirer.infuseSMP.extraeffects.Apophis;
 import com.catadmirer.infuseSMP.managers.EffectMapping;
-import org.bukkit.Bukkit;
-import org.bukkit.Particle;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Player;
-import org.bukkit.scheduler.BukkitRunnable;
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents;
+import net.minecraft.entity.attribute.EntityAttributeInstance;
+import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.server.MinecraftServer;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
+import java.util.UUID;
+import java.util.HashSet;
+import java.util.Set;
 
-public class GlobalLoop extends BukkitRunnable {
-    private final Infuse plugin;
+public class GlobalLoop {
+    private int ticks = 0;
+    
+    // Stub sets for curses and boosts until the effects are fully ported
+    public static final Set<UUID> cursedPlayers = new HashSet<>();
 
-    public GlobalLoop(Infuse plugin) {
-        this.plugin = plugin;
-    }
+    public GlobalLoop() {}
 
     public void start() {
-        this.runTaskTimer(plugin, 0, 20);
+        ServerTickEvents.START_SERVER_TICK.register(this::onTick);
     }
 
-    public void stop() {
-        this.cancel();
-    }
+    private void onTick(MinecraftServer server) {
+        ticks++;
+        if (ticks % 20 != 0) return; // Run every 20 ticks (1 second)
 
-    @Override
-    public void run() {
-        for (Player player : Bukkit.getOnlinePlayers()) {
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
             // Getting the player's equipped effects
-            EffectMapping lEffect = plugin.getDataManager().getEffect(player.getUniqueId(), "1");
-            EffectMapping rEffect = plugin.getDataManager().getEffect(player.getUniqueId(), "2");
+            EffectMapping lEffect = Infuse.getInstance().getDataManager().getEffect(player.getUuid(), "1");
+            EffectMapping rEffect = Infuse.getInstance().getDataManager().getEffect(player.getUuid(), "2");
 
-            // Applying passive effects to the player
             if (lEffect != null) {
                 lEffect.applyPassiveEffects(player);
-                plugin.getParticleManager().spawnEffectParticles(player, "1");
+                Infuse.getInstance().getParticleManager().spawnEffectParticles(player, "1");
             }
 
-            // Applying passive effects to the player
             if (rEffect != null) {
                 rEffect.applyPassiveEffects(player);
-                plugin.getParticleManager().spawnEffectParticles(player, "2");
+                Infuse.getInstance().getParticleManager().spawnEffectParticles(player, "2");
             }
 
-            // Making sure the apophis boost has been removed
-            if (!plugin.getDataManager().hasEffect(player, EffectMapping.APOPHIS)) {
-                AttributeInstance playerHealth = player.getAttribute(Attribute.MAX_HEALTH);
-                playerHealth.removeModifier(Apophis.apophisBoost);
+            if (!Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.APOPHIS)) {
+                EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+                if (playerHealth != null) {
+                    playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Apophis.APOPHIS_BOOST_ID);
+                }
             }
 
-            // Making sure the heart boost has been removed
-            if (!plugin.getDataManager().hasEffect(player, EffectMapping.HEART)) {
-                AttributeInstance playerHealth = player.getAttribute(Attribute.MAX_HEALTH);
-                playerHealth.removeModifier(Heart.heartBoost);
+            if (!Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.HEART)) {
+                EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+                if (playerHealth != null) {
+                    playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_BOOST_ID);
+                }
+            }
+
+            if (!Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.EMERALD)) {
+                net.minecraft.item.ItemStack stack = player.getMainHandStack();
+                player.getWorld().getRegistryManager().getOptional(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
+                    .flatMap(r -> r.getOptional(net.minecraft.enchantment.Enchantments.LOOTING))
+                    .ifPresent(entry -> {
+                        com.catadmirer.infuseSMP.util.ItemUtil.removeSpecialEnchant(stack, "infuse:emerald_looting", entry);
+                    });
+            }
+
+            if (!com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "heart")) {
+                EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+                if (playerHealth != null) {
+                    playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_SPARK_BOOST_ID);
+                }
             }
 
             // Spawning particles on cursed players
-            if (Ender.cursedPlayers.contains(player.getUniqueId())) {
-                player.getWorld().spawnParticle(Particle.WITCH, player.getLocation().add(0, 1, 0), 10, 0.3, 0.5, 0.3, 0.01);
+            if (cursedPlayers.contains(player.getUuid())) {
+                ServerWorld world = (ServerWorld) player.getWorld();
+                world.spawnParticles(
+                    ParticleTypes.WITCH, 
+                    player.getX(), player.getY() + 1, player.getZ(), 
+                    10, 0.3, 0.5, 0.3, 0.01
+                );
             }
         }
+        Infuse.getInstance().getHitTracker().tick();
     }
 }

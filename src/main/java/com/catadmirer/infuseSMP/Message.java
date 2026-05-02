@@ -1,11 +1,11 @@
 package com.catadmirer.infuseSMP;
 
+import eu.pb4.placeholders.api.ParserContext;
+import eu.pb4.placeholders.api.parsers.TagParser;
+import net.minecraft.text.Text;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import net.kyori.adventure.text.Component;
-import net.kyori.adventure.text.minimessage.MiniMessage;
-import net.kyori.adventure.text.serializer.legacy.LegacyComponentSerializer;
 
 public class Message {
     private String message;
@@ -19,19 +19,15 @@ public class Message {
     public Message applyPlaceholder(String placeholder, Object value) {
         this.message = message.replace(String.format("%%%s%%", placeholder), String.valueOf(value));
         placeholders.remove(placeholder);
-
         return this;
     }
 
-    public Message applyPlaceholders(Map<String,Object> placeholders) {
+    public Message applyPlaceholders(Map<String, Object> placeholders) {
         placeholders.forEach(this::applyPlaceholder);
         return this;
     }
 
-    // Text serializers
-    public static final MiniMessage minimessage = MiniMessage.miniMessage();
-    public static final LegacyComponentSerializer legacyAmpersand = LegacyComponentSerializer.legacyAmpersand();
-
+    @Override
     public String toString() {
         return message;
     }
@@ -40,45 +36,32 @@ public class Message {
         return List.of(message.split("\n"));
     }
 
-    public List<Component> toComponentList() {
+    public List<Text> toComponentList() {
         if (!placeholders.isEmpty()) {
-            throw new IllegalStateException("Not all placeholders have been registered.");
+            throw new IllegalStateException("Not all placeholders have been registered. Missing: " + placeholders);
         }
-        
-        return toStringList().stream().map(m -> MiniMessage.miniMessage().deserialize("<i:false>" + m)).toList();
+        return toStringList().stream().map(m -> TagParser.DEFAULT.parseText(m, ParserContext.of())).toList();
     }
 
-    public Component toComponent() {
+    public Text toComponent() {
         if (!placeholders.isEmpty()) {
-            throw new IllegalStateException("Not all placeholders have been registered.");
+            throw new IllegalStateException("Not all placeholders have been registered. Missing: " + placeholders);
         }
-
-        return MiniMessage.miniMessage().deserialize("<i:false>" + toString());
+        return TagParser.DEFAULT.parseText(message, ParserContext.of());
     }
 
-    /**
-     * Helper function that allows minimessage translation for an arbitrary string.
-     * 
-     * @param message The minimessage string to translate
-     * 
-     * @return The {@link Component} that can be sent to players.
-     */
-    public static Component toComponent(String message) {
-        return MiniMessage.miniMessage().deserialize("<i:false>" + message);
+    public static Text toComponent(String message) {
+        return TagParser.DEFAULT.parseText(message, ParserContext.of());
     }
 
-    public static enum MessageType {
+    public enum MessageType {
         EFFECT_BROADCAST(List.of("player", "item", "x", "y", "z", "dimension"), "🧪 %player% is cooking up the %item%<reset> at %x%, %y%, %z%... %dimension%"),
         DISCORD_BROADCAST(List.of("player", "item", "x", "y", "z", "dimension"), "%player% is cooking up the %item% at %x%, %y%, %z% in %dimension% @everyone"),
         EFFECT_FINISHED(List.of("item"), "%item% has been brewed!"),
-
         REGULAR_BROADCAST(List.of("item", "x", "y", "z", "dimension"), "🧪 A %item%<reset> has been crafted at <#90D5FF><b>%x%, %y%, %z%... %dimension%"),
-
         SLOT_EMPTY(List.of("slot"), "<red>You don't have any effect equipped in slot %slot%."),
         EFFECT_NONE_EQUIPPED(List.of("slot"), "<red>You don't have an Effect equipped in slot %slot%."),
-
         WITHDRAW_INVALID("<red>Invalid usage. Use /ldrain or /rdrain"),
-
         TRUST_CONSOLEUSAGE("<red>Only players can use this command."),
         TRUST_INCORRECTUSAGE(List.of("label"), "<red>Usage: /%label% <player>"),
         TRUST_NOPLAYER("<red>Player not found."),
@@ -87,46 +70,31 @@ public class Message {
         TRUST_ALREADYTRUSTED(List.of("target"), "<green>You already trust %target%."),
         TRUST_REMOVED(List.of("target"), "<green>You no longer trust %target%."),
         TRUST_NOTTRUSTED(List.of("target"), "<green>You already didn't trust %target%."),
-
         EFFECT_NOBREWING("<red>You need to craft this in a brewing stand!"),
         DEATH_MESSAGE(List.of("victim", "killer"), "%victim% was slain by %killer%"),
-
         CONTROLS_USAGE("<red>Usage: /controls <offhand|command>"),
         CONTROLS_INVALID_PARAM("<red>Invalid option. Use \"offhand\" or \"command\"."),
-
         INFUSE_INVALID_PARAM("<red>Please use the tab completions as a reference."),
         INFUSE_INVALID_SLOT(List.of("slot"), "<red>Invalid Argument! Could not identify slot %slot%.  Please use \"1\" or \"2\"."),
         INFUSE_CONTROLS_USAGE("<red>Usage: /infuse controls <offhand|command>"),
         INFUSE_CONTROLS_SUCCESS(List.of("controlMode"), "<dark_red>Your controls are now %controlMode%"),
-
         INFUSE_SETEFFECT_USAGE("<red>Invalid Argument! Please use /infuse setEffect <player> <aug_fire|ocean> <1|2>"),
         INFUSE_SETEFFECT_SUCCESS(List.of("slot", "player_name", "effect_name"), "<green>Successfully set the effect in slot %slot% of player %player_name% to %effect_name%."),
-
         INFUSE_GIVEEFFECT_USAGE("<red>Invalid Argument! Please use /infuse giveEffect <player> <aug_fire|ocean>"),
         INFUSE_GIVEEFFECT_SUCCESS(List.of("effect_color", "effect_name"), "%effect_color%You recieved the %effect_name%"),
-
         INFUSE_CLEAREFFECT_USAGE("<red>Invalid Argument! Please use /infuse clearEffect <player>"),
         INFUSE_CLEAREFFECT_SUCCESS(List.of("player_name"), "<green>Cleared %player_name%'s effects"),
-
         INFUSE_COOLDOWN_USAGE("<red>Invalid Argument! Please use /infuse cooldown <player>"),
         INFUSE_COOLDOWN_SUCCESS(List.of("player_name"), "<green>Removed %player_name%'s cooldown"),
-
         CLEAREFFECTS_USAGE("<red>Usage: /infuse clearEffects <player>"),
-
         JOIN_ABILITY_NOTIFY(List.of("control_mode"), "<gray>Your ability mode is set to: %control_mode%"),
-        
         DRAIN_SUCCESS(List.of("effect_name"), "<green>You have drained your: %effect_name%"),
-
         EFFECT_EQUIPPED(List.of("effect_name"), "<green>You have equipped the %effect_name%"),
-
         SWAP_NO_EFFECTS("<red>You do not have any effects equipped to swap."),
         SWAP_SUCCESS("<green>Your Effects have been swapped."),
-
         THIEF_STEAL(List.of("victim", "effect_name"), "<yellow>You stole %victim%'s %effect_name% Effect"),
-
         RECIPE_NOT_FOUND("<red>No recipe found for this potion."),
         RECIPE_DISABLED("Recipe is disabled/broken"),
-
         ERROR_INV_FULL("<red>Your inventory is full! Make space before unequipping."),
         ERROR_NOT_PLAYER("<red>Only players can use this command."),
         ERROR_NOT_OP("<red>You must be OP to run this command."),
@@ -211,7 +179,6 @@ public class Message {
         AUG_THIEF_NAME("<dark_red>Augmented Thief Effect"),
         AUG_THIEF_LORE("<dark_red><b>ᴘᴀꜱꜱɪᴠᴇ ᴇꜰꜰᴇᴄᴛꜱ:", "<dark_red>🥷 <dark_gray>You're not shown on tablist", "<dark_red>🥷 <dark_gray>Your footsteps don't make noise", "<dark_red>🥷 <dark_gray>Kill a player to disguise yourself as them", "<dark_gray>", "<dark_red><b>ꜱᴘᴀʀᴋ ᴇꜰꜰᴇᴄᴛꜱ:", "<dark_red>🥷 <dark_gray>Temporarily steal your opponents effect", "<dark_gray>", "<dark_aqua>ᴅᴜʀᴀᴛɪᴏɴ: Unknown", "<dark_aqua>ᴄᴏᴏʟᴅᴏᴡɴ: Unknown");
 
-        // Enum attributes
         public final String configKey = name().toLowerCase();
         public final String defaultValue;
         public final List<String> placeholders;

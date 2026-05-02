@@ -1,187 +1,55 @@
 package com.catadmirer.infuseSMP.effects;
 
 import com.catadmirer.infuseSMP.Infuse;
-import com.catadmirer.infuseSMP.events.EffectEquipEvent;
-import com.catadmirer.infuseSMP.events.TenHitEvent;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.DataManager;
 import com.catadmirer.infuseSMP.managers.EffectMapping;
-import com.destroystokyo.paper.MaterialSetTag;
-import java.util.HashSet;
-import java.util.Set;
+import net.minecraft.block.Blocks;
+import net.minecraft.entity.LivingEntity;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.sound.SoundCategory;
+import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
-import org.bukkit.Bukkit;
-import org.bukkit.Location;
-import org.bukkit.Material;
-import org.bukkit.Sound;
-import org.bukkit.World;
-import org.bukkit.attribute.Attribute;
-import org.bukkit.attribute.AttributeInstance;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.entity.EntityDamageByEntityEvent;
-import org.bukkit.event.entity.EntityToggleGlideEvent;
-import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.inventory.ItemStack;
-import org.bukkit.potion.PotionEffect;
-import org.bukkit.potion.PotionEffectType;
-import org.bukkit.scheduler.BukkitRunnable;
-import org.bukkit.util.Vector;
 
-public class Frost implements Listener {
-    private final static Set<UUID> frozenAttackers = new HashSet<>();
+public class Frost {
 
-    private static Infuse plugin;
-
-    public Frost(DataManager dataManager, Infuse plugin) {
-        Frost.plugin = plugin;
-    }
-
-    public static void applyPassiveEffects(Player player) {
-        if (plugin.getDataManager().hasEffect(player, EffectMapping.FROST) && !(player.getVelocity().lengthSquared() < 0.01)) {
-            if (player.isInPowderedSnow()) {
-                player.setGliding(true);
-            }
-
-            Material blockType = player.getLocation().subtract(0, 1, 0).getBlock().getType();
-            if (MaterialSetTag.ICE.isTagged(blockType)) {
-                player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, 2, false, false));
-            }
-        }
-    }
-
-    @EventHandler
-    public void onCancelSwim(EntityToggleGlideEvent event) {
-        if (event.isGliding()) return;
-        if (!(event.getEntity() instanceof Player player)) return;
+    public static void applyPassiveEffects(ServerPlayerEntity player) {
+        Infuse plugin = Infuse.getInstance();
         if (!plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) return;
 
-        if (player.isInPowderedSnow()) {
-            event.setCancelled(true);
+        if (player.getWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.ICE)) {
+            player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
         }
     }
 
-    @EventHandler
-    public void onMove(PlayerMoveEvent event) {
-        Player player = event.getPlayer();
-        boolean inFrost = player.getLocation().getBlock().getType() == Material.POWDER_SNOW;
-        Vector direction = player.getLocation().getDirection().normalize();
-        if (inFrost && plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) {
-            if (event.getFrom().distanceSquared(event.getTo()) < 0.01) return;
-            double boostStrength = 0.6;
-            Vector newVelocity = direction.multiply(boostStrength);
-            player.setVelocity(newVelocity);
-        }
+    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
+        Infuse plugin = Infuse.getInstance();
+        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.FROST)) return;
+
+        target.setFrozenTicks(200);
     }
 
-    @EventHandler
-    public void onPlayerInteractWithWindCharge(PlayerInteractEvent event) {
-        Player player = event.getPlayer();
-        ItemStack item = player.getInventory().getItemInMainHand();
-        if (item != null && item.getType() == Material.WIND_CHARGE) {
-            if (player.getFreezeTicks() > 1) {
-                event.setCancelled(true);
-            }
-
-        }
-    }
-
-    @EventHandler
-    public void onTenthAttack(TenHitEvent event) {
-        Infuse.LOGGER.debug("[Frost] Recieved TenHitEvent");
-        Infuse.LOGGER.debug("[Frost] TenHitEvent Attacker: {}", event.getAttacker().getName());
-        Infuse.LOGGER.debug("[Frost] TenHitEvent Target: {}", event.getTarget().getName());
-        
-        if (!plugin.getDataManager().hasEffect(event.getAttacker(), EffectMapping.FROST)) return;
-
-        Infuse.LOGGER.debug("[Frost] Attacker has frost effect");
-
-        (new BukkitRunnable() {
-            int ticksElapsed = 0;
-            final int freezeDuration = 200;
-
-            public void run() {
-                if (this.ticksElapsed >= freezeDuration) {
-                    event.getTarget().setFreezeTicks(0);
-                    this.cancel();
-                } else {
-                    int currentFreezeTicks = event.getTarget().getFreezeTicks();
-                    event.getTarget().setFreezeTicks(currentFreezeTicks + 2);
-                    this.ticksElapsed += 2;
-                }
-            }
-        }).runTaskTimer(plugin, 0L, 2L);
-    }
-
-    public static void activateSpark(Boolean isAugmented, Player caster) {
-        UUID playerUUID = caster.getUniqueId();
+    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
+        Infuse plugin = Infuse.getInstance();
+        UUID playerUUID = player.getUuid();
 
         if (CooldownManager.isOnCooldown(playerUUID, "frost")) return;
 
-        caster.getWorld().playSound(caster.getLocation(), Sound.BLOCK_BEACON_POWER_SELECT, 1, 1);
-        caster.addPotionEffect(new PotionEffect(PotionEffectType.UNLUCK, 300, 0));
-        
-        // Applying cooldowns and durations for the effect
+        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+
         long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_FROST : EffectMapping.FROST);
         long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_FROST : EffectMapping.FROST);
 
         CooldownManager.setTimes(playerUUID, "frost", duration, cooldown);
-
-        Location center = caster.getLocation();
-        double radius = 5;
-        World world = caster.getWorld();
-        final Set<Player> affectedPlayers = new HashSet<>();
-
-        for (Player player : Bukkit.getOnlinePlayers()) {
-            if (!player.equals(caster) && !isTeammate(player, caster)
-                    && player.getWorld().equals(world)
-                    && player.getLocation().distance(center) <= radius) {
-                affectedPlayers.add(player);
-                AttributeInstance jumpAttribute = player.getAttribute(Attribute.JUMP_STRENGTH);
-                if (jumpAttribute != null) {
-                    jumpAttribute.setBaseValue(0.1);
-                }
+        
+        for (net.minecraft.entity.Entity entity : player.getWorld().getOtherEntities(player, player.getBoundingBox().expand(10))) {
+            if (entity instanceof LivingEntity living) {
+                if (entity instanceof ServerPlayerEntity nearby && plugin.getDataManager().isTrusted(nearby.getUuid(), player.getUuid())) continue;
+                living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int)(duration * 20 / 1000), 2, false, false));
+                living.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, (int)(duration * 20 / 1000), 2, false, false));
+                living.setFrozenTicks(200);
             }
-        }
-
-        frozenAttackers.add(caster.getUniqueId());
-
-        new BukkitRunnable() {
-            public void run() {
-                for (Player player : affectedPlayers) {
-                    AttributeInstance jumpAttribute = player.getAttribute(Attribute.JUMP_STRENGTH);
-                    if (jumpAttribute != null) {
-                        jumpAttribute.setBaseValue(0.42);
-                    }
-                }
-                frozenAttackers.remove(caster.getUniqueId());
-            }
-        }.runTaskLater(plugin, duration * 20L);
-    }
-
-
-    @EventHandler
-    public void onPlayerJoin(EffectEquipEvent event) {
-        Player player = event.getPlayer();
-        AttributeInstance jumpAttribute = player.getAttribute(Attribute.JUMP_STRENGTH);
-        if (jumpAttribute != null && jumpAttribute.getBaseValue() == 0.1) {
-            jumpAttribute.setBaseValue(0.42);
-        }
-    }
-
-    private static boolean isTeammate(Player player, Player caster) {
-        return plugin.getDataManager().isTrusted(player, caster);
-    }
-
-    @EventHandler
-    public void onPlayerAttack(EntityDamageByEntityEvent event) {
-        if (!(event.getDamager() instanceof Player attacker)) return;
-        if (!attacker.hasPotionEffect(PotionEffectType.UNLUCK)) return;
-        PotionEffect effect = attacker.getPotionEffect(PotionEffectType.UNLUCK);
-        if (effect.getAmplifier() >= 0 && frozenAttackers.contains(attacker.getUniqueId()) && event.getEntity() instanceof Player target) {
-            target.setFreezeTicks(200);
         }
     }
 }

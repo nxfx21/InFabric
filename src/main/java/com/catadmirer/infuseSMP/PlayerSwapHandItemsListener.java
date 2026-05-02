@@ -1,48 +1,37 @@
 package com.catadmirer.infuseSMP;
 
-import com.catadmirer.infuseSMP.managers.CooldownManager;
 import com.catadmirer.infuseSMP.managers.DataManager;
 import com.catadmirer.infuseSMP.managers.EffectMapping;
+import net.minecraft.server.network.ServerPlayerEntity;
 import java.util.UUID;
-import org.bukkit.entity.Player;
-import org.bukkit.event.EventHandler;
-import org.bukkit.event.Listener;
-import org.bukkit.event.player.PlayerSwapHandItemsEvent;
 
-public class PlayerSwapHandItemsListener implements Listener {
+public class PlayerSwapHandItemsListener {
     private final DataManager dataManager;
 
-    public PlayerSwapHandItemsListener(DataManager dataManager) {
-        this.dataManager = dataManager;
+    public PlayerSwapHandItemsListener() {
+        this.dataManager = Infuse.getInstance().getDataManager();
     }
 
-    /**
-     * Listens for when the player swaps the items in their main and offhand.
-     * When they do so, it will be used to activate their left or right spark based on whether or not they are crouching.
-     * 
-     * @param event The {@link PlayerSwapHandItemsEvent} to process
-     */
-    @EventHandler
-    public void onPlayerSwapHandItems(PlayerSwapHandItemsEvent event) {
-        Player player = event.getPlayer();
-        UUID playerUUID = player.getUniqueId();
+    // Call this from a Mixin in ServerPlayNetworkHandler handling PlayerActionC2SPacket for SWAP_ITEM_WITH_OFFHAND
+    public boolean onPlayerSwapHandItems(ServerPlayerEntity player) {
+        UUID playerUUID = player.getUuid();
         String data = dataManager.getControlMode(playerUUID);
-        if (data.equals("offhand")) {
-            // Getting the effect equipped in each slot
-            EffectMapping lEffect = dataManager.getEffect(player.getUniqueId(), "1");
-            EffectMapping rEffect = dataManager.getEffect(player.getUniqueId(), "2");
+        if ("offhand".equals(data)) {
+            EffectMapping lEffect = dataManager.getEffect(player.getUuid(), "1");
+            EffectMapping rEffect = dataManager.getEffect(player.getUuid(), "2");
 
-            // Activating the left effect's spark if the player was sneaking and the effect wasn't on cooldown.
-            if (lEffect != null && !player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, lEffect.regular().getKey())) {
-                event.setCancelled(true);
-                lEffect.activateSpark(player);
-            }
-
-            // Activating the right effect's spark if the player was not sneaking and the effect wasn't on cooldown.
-            if (rEffect != null && player.isSneaking() && !CooldownManager.isOnCooldown(playerUUID, rEffect.regular().getKey())) {
-                event.setCancelled(true);
-                rEffect.activateSpark(player);
+            if (player.isSneaking()) {
+                if (rEffect != null) {
+                    rEffect.activateSpark(player);
+                    return true;
+                }
+            } else {
+                if (lEffect != null) {
+                    lEffect.activateSpark(player);
+                    return true;
+                }
             }
         }
+        return false;
     }
 }

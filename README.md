@@ -1,3 +1,7 @@
+# Infuse but for fabric instead. all credits go to original authors
+
+All credits go to their original authors. (no its not entirely ai, i just use github desktop, it makes the commits name and description AI Generated)
+
 ![Infuse](https://cdn.modrinth.com/data/cached_images/e53b36316a34f52b86c051c7efd0d023caab717d.png)
 
 [![Discord](https://cdn.modrinth.com/data/cached_images/16684009ebeec99f6558120d6fae93d4a01eaf7e.png)](https://discord.gg/shaw)
@@ -5,7 +9,8 @@
 
 This is a Custom Plugin with different types of effects that provide OP Abilities
 
-# Plugin Info:
+## Plugin Info
+
 The brewing stand ui has been replaced with a crafting table!  Use this to craft your effects.  
 Admins can re-enable brewing by adjusting the config.yml.  
 Augmented effects have half the cooldown of regular effects.  
@@ -16,12 +21,15 @@ Rituals last for 10 minutes before the augmented effect is crafted.
 Players don't need to do anything but be the one to grab the effect when the ritual finishes.  
 
 ## Resource Packs
+
 Head over to the [InfusePack](https://modrinth.com/resourcepack/infusepack) page and get it there.
 
-## Effect Abiltities:
+## Effect Abiltities
+
 In-game, run /infuses to see what they do!
 
-## Commands:
+## Commands
+
 **/controls**
 
 This changes between using [Command Keys](https://modrinth.com/mod/commandkeys) and using offhand to activate abilities
@@ -54,10 +62,12 @@ This can be allowed to preview/take effects
 
 You can use [Command Keys](https://modrinth.com/mod/commandkeys) for custom keybinds (bind /rspark to something and /lspark) but its optional
 
-## Recipes:
-The first effect crafted starts a ritual and gives an augmented effect, next 3 give a regular one, and then its uncraftable 
+## Recipes
 
-#### Some Notes:
+The first effect crafted starts a ritual and gives an augmented effect, next 3 give a regular one, and then its uncraftable
+
+#### Some Notes
+
 - The speed effect uses 1 dune and 1 eye armor trim.
 - The heart effect can be crafted with any kind of potion.
 - The frost and regen effects require pearlescent froglights.

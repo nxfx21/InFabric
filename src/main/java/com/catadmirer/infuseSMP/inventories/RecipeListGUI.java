@@ -1,41 +1,26 @@
 package com.catadmirer.infuseSMP.inventories;
 
-import com.catadmirer.infuseSMP.commands.Recipes;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
-import com.catadmirer.infuseSMP.util.InventoryUtils;
-import net.kyori.adventure.text.Component;
-import org.bukkit.Bukkit;
-import org.bukkit.inventory.Inventory;
-import org.bukkit.inventory.InventoryHolder;
-import org.bukkit.inventory.ItemStack;
-import org.jetbrains.annotations.NotNull;
+import com.catadmirer.infuseSMP.Infuse;
+import eu.pb4.sgui.api.gui.SimpleGui;
+import net.minecraft.screen.ScreenHandlerType;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
 
-public class RecipeListGUI implements InventoryHolder {
-    private final Inventory inventory;
+public class RecipeListGUI extends SimpleGui {
 
-    public RecipeListGUI() {
-        inventory = Bukkit.createInventory(this, 36, Component.text("Potion Crafting"));
-
-        // Loading the potions into the inventory
-        int[] customSlots = {0, 2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30, 32};
-
-        int i = 0;
-        for (EffectMapping effect : EffectMapping.values()) {
-            if (effect.isAugmented()) continue;
-
-            ItemStack potion = Recipes.createPotionWithModifiedLore(effect);
-            inventory.setItem(customSlots[i], potion);
-            i++;
+    public RecipeListGUI(ServerPlayerEntity player) {
+        super(ScreenHandlerType.GENERIC_9X6, player, false);
+        this.setTitle(Text.literal("Recipes"));
+        
+        int slot = 0;
+        for (com.catadmirer.infuseSMP.managers.EffectMapping mapping : com.catadmirer.infuseSMP.managers.EffectMapping.values()) {
+            if (mapping.name().startsWith("AUG_")) continue;
+            
+            if (Infuse.getInstance().getRecipeManager().isRecipeEnabled(mapping)) {
+                this.setSlot(slot++, mapping.createItem());
+            }
+            
+            if (slot >= 54) break;
         }
-
-        InventoryUtils.fillRemainingSlots(inventory);
-
-        // Locking the inventory
-        InventoryUtils.lockInventory(inventory);
-    }
-
-    @Override
-    public @NotNull Inventory getInventory() {
-        return inventory;
     }
 }
