@@ -30,35 +30,35 @@ In-game, run /infuses to see what they do!
 
 ## Commands
 
-**/controls**
+### `/controls`
 
 This changes between using [Command Keys](https://modrinth.com/mod/commandkeys) and using offhand to activate abilities
 
-**/lspark, /rspark**
+### `/lspark`, `/rspark`
 
 This activates your ability in your first and second slot
 
-**/cleareffect <player>**
+### `/cleareffect <player>`
 
 This clears the players effects
 
-**/cooldown <player>**
+### `/cooldown <player>`
 
 This resets the cooldown of the player
 
-**/ldrain /rdrain**
+### `/ldrain`, `/rdrain`
 
 This turns your effect back into a bottle that can be used for trading
 
-**/swap**
+### `/swap`
 
 This swaps the order of your effects around
 
-**/infuse gui**
+### `/infuse gui`
 
 This can be allowed to preview/take effects
 
-**Optional**
+### Optional
 
 You can use [Command Keys](https://modrinth.com/mod/commandkeys) for custom keybinds (bind /rspark to something and /lspark) but its optional
 
@@ -66,7 +66,7 @@ You can use [Command Keys](https://modrinth.com/mod/commandkeys) for custom keyb
 
 The first effect crafted starts a ritual and gives an augmented effect, next 3 give a regular one, and then its uncraftable
 
-#### Some Notes
+### Some Notes
 
 - The speed effect uses 1 dune and 1 eye armor trim.
 - The heart effect can be crafted with any kind of potion.
