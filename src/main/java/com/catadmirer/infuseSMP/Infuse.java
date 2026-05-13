@@ -62,6 +62,7 @@ public class Infuse implements ModInitializer {
         hitTracker.registerEvents();
         dropManager.registerEvents();
         effectCraftManager.registerEvents();
+        PlayerDeathListener.register();
 
         // Register TenHit listeners
         com.catadmirer.infuseSMP.events.TenHitEvent.EVENT.register(com.catadmirer.infuseSMP.effects.Fire::onTenHit);

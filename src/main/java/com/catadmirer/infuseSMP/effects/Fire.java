@@ -37,15 +37,6 @@ public class Fire {
 
         player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1, 1);
 
-        ServerWorld world = (ServerWorld) player.getWorld();
-        for (Entity entity : world.getOtherEntities(player, player.getBoundingBox().expand(5, 5, 5))) {
-            if (entity instanceof LivingEntity living) {
-                living.setOnFireFor(5);
-            }
-        }
-
-        // TODO: Port spawnSparkEffect (requires task scheduling)
-        
         long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_FIRE : EffectMapping.FIRE);
         long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_FIRE : EffectMapping.FIRE);
 

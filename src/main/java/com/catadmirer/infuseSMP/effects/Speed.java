@@ -40,12 +40,14 @@ public class Speed {
         UUID uuid = attacker.getUuid();
         long currentTime = System.currentTimeMillis();
         long lastHit = lastHitTime.getOrDefault(uuid, 0L);
+        
         if (currentTime - lastHit >= 50L) {
             lastHitTime.put(uuid, currentTime);
             speedLevels.put(uuid, speedLevels.getOrDefault(uuid, 1) + 1);
             
-            // In Fabric/Vanilla, noDamageTicks is handled differently but we can still reduce it.
-            // target.hurtTime = target.hurtTime / 2;
+            // Halve target's noDamageTicks
+            int currentNoDamageTicks = target.timeUntilRegen;
+            target.timeUntilRegen = currentNoDamageTicks / 2;
         }
     }
 

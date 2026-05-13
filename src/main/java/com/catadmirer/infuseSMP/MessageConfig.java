@@ -25,6 +25,16 @@ public class MessageConfig {
         }
         try (FileReader reader = new FileReader(file)) {
             config = JsonParser.parseReader(reader).getAsJsonObject();
+            
+            // Migration for renamed keys
+            if (config.has("infuse_cleareffect_usage")) {
+                config.add("infuse_cleareffects_usage", config.remove("infuse_cleareffect_usage"));
+            }
+            if (config.has("infuse_cleareffect_success")) {
+                config.add("infuse_cleareffects_success", config.remove("infuse_cleareffect_success"));
+            }
+            save();
+
             Infuse.LOGGER.info("Successfully loaded messages.json");
             return true;
         } catch (IOException e) {

@@ -41,7 +41,22 @@ public class Emerald {
         long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_EMERALD : EffectMapping.EMERALD);
 
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, (int) duration * 20, 4));
-
         CooldownManager.setTimes(playerUUID, "emerald", duration, cooldown);
+    }
+
+    public static void cleanupInventory(net.minecraft.inventory.Inventory inventory, ServerPlayerEntity player) {
+        Infuse plugin = Infuse.getInstance();
+        if (!plugin.getDataManager().hasEffect(player, EffectMapping.EMERALD)) return;
+
+        for (int i = 0; i < inventory.size(); i++) {
+            net.minecraft.item.ItemStack stack = inventory.getStack(i);
+            if (stack.isEmpty()) continue;
+            
+            player.getWorld().getRegistryManager().getOptional(net.minecraft.registry.RegistryKeys.ENCHANTMENT)
+                .flatMap(r -> r.getOptional(net.minecraft.enchantment.Enchantments.LOOTING))
+                .ifPresent(entry -> {
+                    com.catadmirer.infuseSMP.util.ItemUtil.removeSpecialEnchant(stack, "infuse:emerald_looting", entry);
+                });
+        }
     }
 }

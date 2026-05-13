@@ -10,9 +10,13 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.util.math.BlockPos;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 public class Frost {
+    private static final Map<BlockPos, Long> CHANGED_BLOCKS = new HashMap<>();
 
     public static void applyPassiveEffects(ServerPlayerEntity player) {
         Infuse plugin = Infuse.getInstance();
@@ -21,6 +25,40 @@ public class Frost {
         if (player.getWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.ICE)) {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
         }
+
+        changeToSnow(player);
+        revertBlocks(player.getWorld());
+    }
+
+    private static void changeToSnow(ServerPlayerEntity player) {
+        int radius = 3;
+        BlockPos center = player.getBlockPos();
+        net.minecraft.world.World world = player.getWorld();
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dy = -radius; dy <= radius; dy++) {
+                for (int dz = -radius; dz <= radius; dz++) {
+                    BlockPos pos = center.add(dx, dy, dz);
+                    if (world.getBlockState(pos).isOf(Blocks.POWDER_SNOW)) {
+                        if (world.getBlockState(pos.up()).isAir()) {
+                            world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
+                            CHANGED_BLOCKS.put(pos, System.currentTimeMillis() + 5000); // Revert in 5s
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private static void revertBlocks(net.minecraft.world.World world) {
+        long now = System.currentTimeMillis();
+        CHANGED_BLOCKS.entrySet().removeIf(entry -> {
+            if (now >= entry.getValue()) {
+                world.setBlockState(entry.getKey(), Blocks.POWDER_SNOW.getDefaultState());
+                return true;
+            }
+            return false;
+        });
     }
 
     public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {

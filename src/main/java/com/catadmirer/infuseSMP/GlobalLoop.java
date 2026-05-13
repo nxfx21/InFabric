@@ -66,6 +66,20 @@ public class GlobalLoop {
                     });
             }
 
+            if (!Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.HASTE)) {
+                net.minecraft.item.ItemStack stack = player.getMainHandStack();
+                var registry = player.getWorld().getRegistryManager().getOrThrow(net.minecraft.registry.RegistryKeys.ENCHANTMENT);
+                
+                registry.getOptional(net.minecraft.enchantment.Enchantments.FORTUNE).ifPresent(entry -> 
+                    com.catadmirer.infuseSMP.util.ItemUtil.removeSpecialEnchant(stack, "infuse:haste_fortune", entry));
+                
+                registry.getOptional(net.minecraft.enchantment.Enchantments.EFFICIENCY).ifPresent(entry -> 
+                    com.catadmirer.infuseSMP.util.ItemUtil.removeSpecialEnchant(stack, "infuse:haste_efficiency", entry));
+                
+                registry.getOptional(net.minecraft.enchantment.Enchantments.UNBREAKING).ifPresent(entry -> 
+                    com.catadmirer.infuseSMP.util.ItemUtil.removeSpecialEnchant(stack, "infuse:haste_unbreaking", entry));
+            }
+
             if (!com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "heart")) {
                 EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
                 if (playerHealth != null) {

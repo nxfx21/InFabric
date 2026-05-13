@@ -20,11 +20,22 @@ public class Invisibility {
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.INVISIBILITY, 40, 0, false, false));
     }
 
-    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.INVIS)) return;
-
+    public static void onAttack(ServerPlayerEntity attacker, LivingEntity target) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(attacker, EffectMapping.INVIS)) return;
+        
         target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 80, 0, false, false));
+        spawnBlackParticles(target, 4);
+    }
+
+    private static void spawnBlackParticles(LivingEntity target, int durationSeconds) {
+        // Simple particle spawn for now
+        target.getWorld().getServer().execute(() -> {
+            ((net.minecraft.server.world.ServerWorld)target.getWorld()).spawnParticles(
+                net.minecraft.particle.ParticleTypes.SQUID_INK,
+                target.getX(), target.getY() + 1, target.getZ(),
+                10, 0.5, 0.5, 0.5, 0.1
+            );
+        });
     }
 
     public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {

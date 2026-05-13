@@ -18,13 +18,34 @@ public class Regen {
         if (!plugin.getDataManager().hasEffect(player, EffectMapping.REGEN)) return;
 
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 30, 0, false, false));
+        player.getHungerManager().setFoodLevel(20);
     }
 
-    public static void onAttack(ServerPlayerEntity attacker, LivingEntity target) {
+    public static void onAttack(ServerPlayerEntity attacker, LivingEntity target, float damage) {
         Infuse plugin = Infuse.getInstance();
         if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.REGEN)) return;
 
         attacker.addStatusEffect(new StatusEffectInstance(StatusEffects.REGENERATION, 60, 1, false, false));
+        
+        if (CooldownManager.isEffectActive(attacker.getUuid(), "regen")) {
+            for (net.minecraft.entity.Entity entity : attacker.getWorld().getOtherEntities(attacker, attacker.getBoundingBox().expand(5))) {
+                if (entity instanceof ServerPlayerEntity nearby && plugin.getDataManager().isTrusted(attacker.getUuid(), nearby.getUuid())) {
+                    nearby.heal(damage / 2.0f);
+                }
+            }
+        }
+    }
+
+    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(attacker, EffectMapping.REGEN)) return;
+        if (target instanceof ServerPlayerEntity playerTarget) {
+            playerTarget.getHungerManager().setFoodLevel(Math.max(0, playerTarget.getHungerManager().getFoodLevel() - 2));
+        }
+    }
+
+    public static void onConsume(ServerPlayerEntity player) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(player, EffectMapping.REGEN)) return;
+        player.getHungerManager().setSaturationLevel(player.getHungerManager().getSaturationLevel() + 6.0f);
     }
 
     public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {

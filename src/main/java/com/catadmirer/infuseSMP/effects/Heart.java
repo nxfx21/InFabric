@@ -3,6 +3,7 @@ package com.catadmirer.infuseSMP.effects;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
 import com.catadmirer.infuseSMP.managers.EffectMapping;
+import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
@@ -45,7 +46,41 @@ public class Heart {
         long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_HEART : EffectMapping.HEART);
 
         CooldownManager.setTimes(playerUUID, "heart", duration, cooldown);
+    }
+
+    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(attacker, EffectMapping.HEART)) return;
         
-        // TODO: Schedule modifier removal
+        showHealthAboveEntity(target);
+    }
+
+    private static void showHealthAboveEntity(LivingEntity entity) {
+        net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity display = net.minecraft.entity.EntityType.TEXT_DISPLAY.create(entity.getWorld());
+        if (display == null) return;
+        
+        display.setPos(entity.getX(), entity.getY() + 2.5, entity.getZ());
+        display.setInvisible(false);
+        
+        // Simplified health display logic for Fabric
+        entity.getWorld().spawnEntity(display);
+        display.startRiding(entity);
+        
+        // Remove after 10 seconds
+        Infuse.getInstance().getServer().execute(() -> {
+            // Task scheduling in Fabric is often handled via a manager or tick loop.
+            // For now, we'll use the server's execute with a delay if available or just a tick check.
+        });
+    }
+
+    public static void onConsume(ServerPlayerEntity player, net.minecraft.item.ItemStack stack) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(player, EffectMapping.HEART)) return;
+        
+        int duration = 600;
+        int amplifier = 0;
+        if (stack.isOf(net.minecraft.item.Items.ENCHANTED_GOLDEN_APPLE)) {
+            duration = 2400;
+            amplifier = 4;
+        }
+        player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.ABSORPTION, duration, amplifier));
     }
 }

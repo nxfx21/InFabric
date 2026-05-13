@@ -26,7 +26,7 @@ public class InfuseCommandManager {
         CommandRegistrationCallback.EVENT.register((dispatcher, registryAccess, environment) -> {
             registerInfuseCommand(dispatcher);
             registerAbilitiesCommand(dispatcher);
-            registerClearEffectCommand(dispatcher);
+            registerClearEffectsCommand(dispatcher);
             registerDrainCommand(dispatcher);
             registerSwapEffectsCommand(dispatcher);
             registerTrustCommand(dispatcher);
@@ -101,8 +101,8 @@ public class InfuseCommandManager {
         );
     }
 
-    private void registerClearEffectCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
-        dispatcher.register(literal("cleareffect")
+    private void registerClearEffectsCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(literal("cleareffects")
             .executes(context -> {
                 if (!context.getSource().isExecutedByPlayer()) return 0;
                 ServerPlayerEntity player = context.getSource().getPlayer();
@@ -111,6 +111,16 @@ public class InfuseCommandManager {
                 player.sendMessage(Text.literal("Cleared your effects."));
                 return 1;
             })
+            .then(argument("target", EntityArgumentType.player())
+                .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                    plugin.getDataManager().removeEffect(target.getUuid(), "1");
+                    plugin.getDataManager().removeEffect(target.getUuid(), "2");
+                    context.getSource().sendMessage(Text.literal("Cleared " + target.getName().getString() + "'s effects."));
+                    return 1;
+                })
+            )
         );
     }
 
