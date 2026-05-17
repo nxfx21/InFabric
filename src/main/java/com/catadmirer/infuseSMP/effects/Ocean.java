@@ -30,7 +30,7 @@ public class Ocean {
             if (nearby.getPos().distanceTo(player.getPos()) <= 5) {
                 nearby.setAir(Math.max(-20, nearby.getAir() - drownStrength));
                 if (nearby.getAir() <= 0) {
-                    nearby.damage(player.getServerWorld().getDamageSources().drown(), CooldownManager.isEffectActive(player.getUuid(), "ocean") ? 2.0f : 1.0f);
+                    nearby.damage(player.getServerWorld(), player.getServerWorld().getDamageSources().drown(), CooldownManager.isEffectActive(player.getUuid(), "ocean") ? 2.0f : 1.0f);
                 }
             }
         }

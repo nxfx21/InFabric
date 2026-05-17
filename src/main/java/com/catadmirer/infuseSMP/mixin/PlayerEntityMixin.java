@@ -9,14 +9,13 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Mixin(PlayerEntity.class)
 public class PlayerEntityMixin {
     @Inject(method = "canConsume", at = @At("HEAD"), cancellable = true)
     private void onCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        if (Infuse.getInstance().getDataManager().hasEffect(player, EffectMapping.REGEN)) {
+        if (Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.REGEN)) {
             cir.setReturnValue(true);
         }
     }
@@ -26,7 +25,7 @@ public class PlayerEntityMixin {
         PlayerEntity player = (PlayerEntity) (Object) this;
         Infuse plugin = Infuse.getInstance();
         
-        if (plugin.getDataManager().hasEffect(player, EffectMapping.EMERALD)) {
+        if (plugin.getDataManager().hasEffect(player.getUuid(), EffectMapping.EMERALD)) {
             double multiplier = 2.0;
             if (com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "emerald")) {
                 multiplier = 4.0;

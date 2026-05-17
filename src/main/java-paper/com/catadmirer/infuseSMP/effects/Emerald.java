@@ -1,7 +1,6 @@
 package com.catadmirer.infuseSMP.effects;
 
 import com.catadmirer.infuseSMP.Infuse;
-import com.catadmirer.infuseSMP.InfuseDebug;
 import com.catadmirer.infuseSMP.events.EffectUnequipEvent;
 import com.catadmirer.infuseSMP.events.TenHitEvent;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
@@ -41,6 +40,7 @@ import org.bukkit.event.enchantment.PrepareItemEnchantEvent;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.FoodLevelChangeEvent;
 import org.bukkit.event.inventory.InventoryCloseEvent;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.event.player.PlayerDropItemEvent;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerItemConsumeEvent;
@@ -69,7 +69,8 @@ public class Emerald implements Listener {
 
     @EventHandler
     public void onInventoryCloseEvent(InventoryCloseEvent event) {
-        if (!(plugin.getDataManager().hasEffect(event.getPlayer().getKiller(), EffectMapping.EMERALD))) return;
+        if (!(event.getPlayer() instanceof Player player)) return;
+        if (!(plugin.getDataManager().hasEffect(player, EffectMapping.EMERALD))) return;
         if (event.getView().getType() == InventoryType.PLAYER) return;
 
         for (ItemStack item : event.getView().getTopInventory().getContents()) {
@@ -88,7 +89,7 @@ public class Emerald implements Listener {
     public void onEffectUnequipEvent(EffectUnequipEvent event) {
         if (!(event.getEffect().equals(EffectMapping.EMERALD))) return;
 
-        for (ItemStack item : event.getPlayer().getInventory().getContents()) {
+        for (ItemStack item : event.getPlayer().getInventory()) {
             if (item == null || item.getType() == Material.AIR) continue;
 
             ItemUtil.removeSpecialEnchant(item, lootingKey, Enchantment.LOOTING);
@@ -233,7 +234,7 @@ public class Emerald implements Listener {
                 }
                 getEnchantmentList.setAccessible(false);
             } catch (NoSuchMethodException e) {
-                InfuseDebug.log("Could not find the \"getEnchantmentList\" method in the EnchantmentMenu class");
+                Infuse.LOGGER.error("Could not find the \"getEnchantmentList\" method in the EnchantmentMenu class");
             } catch (SecurityException ignored) {
             } catch (IllegalArgumentException ignored) {
             } catch (IllegalAccessException ignored) {

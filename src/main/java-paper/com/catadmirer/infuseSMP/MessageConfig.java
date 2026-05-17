@@ -156,13 +156,23 @@ public class MessageConfig {
         }
 
         if (config.contains("infuse_cleareffect.usage")) {
-            config.set("infuse_cleareffect_usage", config.get("infuse_cleareffect.usage", MessageType.INFUSE_CLEAREFFECT_USAGE.defaultValue));
+            config.set("infuse_cleareffects_usage", config.get("infuse_cleareffect.usage", MessageType.INFUSE_CLEAREFFECTS_USAGE.defaultValue));
             config.set("infuse_cleareffect.usage", null);
         }
 
         if (config.contains("infuse_cleareffect.success")) {
-            config.set("infuse_cleareffect_success", config.get("infuse_cleareffect.success", MessageType.INFUSE_CLEAREFFECT_SUCCESS.defaultValue));
+            config.set("infuse_cleareffects_success", config.get("infuse_cleareffect.success", MessageType.INFUSE_CLEAREFFECTS_SUCCESS.defaultValue));
             config.set("infuse_cleareffect.success", null);
+        }
+
+        if (config.contains("infuse_cleareffect_usage")) {
+            config.set("infuse_cleareffects_usage", config.get("infuse_cleareffect_usage", MessageType.INFUSE_CLEAREFFECTS_USAGE.defaultValue));
+            config.set("infuse_cleareffect_usage", null);
+        }
+
+        if (config.contains("infuse_cleareffect_success")) {
+            config.set("infuse_cleareffects_success", config.get("infuse_cleareffect_success", MessageType.INFUSE_CLEAREFFECTS_SUCCESS.defaultValue));
+            config.set("infuse_cleareffect_success", null);
         }
 
         if (config.contains("infuse_cooldown.usage")) {

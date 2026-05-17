@@ -17,14 +17,18 @@ import org.bukkit.Sound;
 import org.bukkit.World;
 import org.bukkit.attribute.Attribute;
 import org.bukkit.attribute.AttributeInstance;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
 import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityToggleGlideEvent;
 import org.bukkit.event.player.PlayerInteractEvent;
+import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitRunnable;
@@ -32,11 +36,16 @@ import org.bukkit.util.Vector;
 
 public class Frost implements Listener {
     private final static Set<UUID> frozenAttackers = new HashSet<>();
+    private static FixedMetadataValue blockData = null;
 
     private static Infuse plugin;
 
     public Frost(DataManager dataManager, Infuse plugin) {
         Frost.plugin = plugin;
+
+        if (blockData != null) return;
+
+        blockData = new FixedMetadataValue(plugin, 0);
     }
 
     public static void applyPassiveEffects(Player player) {
@@ -50,6 +59,46 @@ public class Frost implements Listener {
                 player.addPotionEffect(new PotionEffect(PotionEffectType.SPEED, 30, 2, false, false));
             }
         }
+    }
+
+    public void changeToSnow(Player player) {
+        int frostSnowRadius = 3;
+
+        Location center = player.getLocation();
+
+        for (int dx = -frostSnowRadius; dx <= frostSnowRadius; dx++) {
+            for (int dy = -frostSnowRadius; dy <= frostSnowRadius; dy++) {
+                for (int dz = -frostSnowRadius; dz <= frostSnowRadius; dz++) {
+                    // Getting the block in the radius
+                    Block powderSnowBlock = center.toBlockLocation().add(dx, dy, dz).getBlock();
+
+                    // Skipping non-powdered snow blocks
+                    if (powderSnowBlock.getType() != Material.POWDER_SNOW) continue;
+
+                    // Skipping if there is a block above this one
+                    if (powderSnowBlock.getRelative(BlockFace.UP).getType() != Material.AIR) continue;
+
+                    // Changing the block to regular snow
+                    powderSnowBlock.setType(Material.SNOW_BLOCK);
+                    
+                    // This may cause powdered snow to permanently become snow if the server shuts down.
+                    Bukkit.getScheduler().runTaskTimer(plugin, task -> {
+                        // Skipping if the player is too close to the block
+                        if (powderSnowBlock.getLocation().distance(player.getLocation()) <= frostSnowRadius) return;
+
+                        // Resetting the block to powdered snow
+                        powderSnowBlock.setType(Material.POWDER_SNOW);
+                        task.cancel();
+                    }, 10, 10);
+                }
+            }
+        }
+    }
+
+    @EventHandler
+    public void onJoin(PlayerJoinEvent event) {
+        if (!plugin.getDataManager().hasEffect(event.getPlayer(), EffectMapping.FROST)) return;
+        changeToSnow(event.getPlayer());
     }
 
     @EventHandler
@@ -66,13 +115,17 @@ public class Frost implements Listener {
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
         Player player = event.getPlayer();
+        if (!plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) return;
+
         boolean inFrost = player.getLocation().getBlock().getType() == Material.POWDER_SNOW;
         Vector direction = player.getLocation().getDirection().normalize();
-        if (inFrost && plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) {
+        if (inFrost) {
             if (event.getFrom().distanceSquared(event.getTo()) < 0.01) return;
             double boostStrength = 0.6;
             Vector newVelocity = direction.multiply(boostStrength);
             player.setVelocity(newVelocity);
+        } else {
+            changeToSnow(player);
         }
     }
 

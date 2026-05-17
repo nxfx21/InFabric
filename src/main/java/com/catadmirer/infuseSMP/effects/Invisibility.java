@@ -53,4 +53,11 @@ public class Invisibility {
         
         // TODO: Port team-wide vanish and particle logic
     }
+
+    public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+        if (!Infuse.getInstance().getDataManager().hasEffect(attacker, EffectMapping.INVIS)) return;
+        
+        target.addStatusEffect(new StatusEffectInstance(StatusEffects.BLINDNESS, 100, 0, false, false));
+        spawnBlackParticles(target, 4);
+    }
 }

@@ -10,10 +10,10 @@ import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Listener;
 
-public class ClearEffect implements Listener, CommandExecutor {
+public class ClearEffects implements Listener, CommandExecutor {
     private final DataManager dataManager;
 
-    public ClearEffect(DataManager dataManager) {
+    public ClearEffects(DataManager dataManager) {
         this.dataManager = dataManager;
     }
     

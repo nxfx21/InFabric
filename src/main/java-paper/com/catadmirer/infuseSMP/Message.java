@@ -105,8 +105,8 @@ public class Message {
         INFUSE_GIVEEFFECT_USAGE("<red>Invalid Argument! Please use /infuse giveEffect <player> <aug_fire|ocean>"),
         INFUSE_GIVEEFFECT_SUCCESS(List.of("effect_color", "effect_name"), "%effect_color%You recieved the %effect_name%"),
 
-        INFUSE_CLEAREFFECT_USAGE("<red>Invalid Argument! Please use /infuse clearEffect <player>"),
-        INFUSE_CLEAREFFECT_SUCCESS(List.of("player_name"), "<green>Cleared %player_name%'s effects"),
+        INFUSE_CLEAREFFECTS_USAGE("<red>Invalid Argument! Please use /infuse clearEffects <player>"),
+        INFUSE_CLEAREFFECTS_SUCCESS(List.of("player_name"), "<green>Cleared %player_name%'s effects"),
 
         INFUSE_COOLDOWN_USAGE("<red>Invalid Argument! Please use /infuse cooldown <player>"),
         INFUSE_COOLDOWN_SUCCESS(List.of("player_name"), "<green>Removed %player_name%'s cooldown"),

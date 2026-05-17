@@ -3,12 +3,9 @@ package com.catadmirer.infuseSMP.effects;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
 import com.catadmirer.infuseSMP.managers.EffectMapping;
-import net.minecraft.entity.Entity;
-import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
-import net.minecraft.server.world.ServerWorld;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
@@ -22,7 +19,7 @@ public class Fire {
         player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
     }
 
-    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
+    public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         Infuse plugin = Infuse.getInstance();
         if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.FIRE)) return;
 

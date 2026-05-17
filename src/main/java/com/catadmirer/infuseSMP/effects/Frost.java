@@ -16,7 +16,7 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Frost {
-    private static final Map<BlockPos, Long> CHANGED_BLOCKS = new HashMap<>();
+    private static final Map<BlockPos, UUID> CHANGED_BLOCKS = new HashMap<>();
 
     public static void applyPassiveEffects(ServerPlayerEntity player) {
         Infuse plugin = Infuse.getInstance();
@@ -27,7 +27,7 @@ public class Frost {
         }
 
         changeToSnow(player);
-        revertBlocks(player.getWorld());
+        revertBlocks(player.getServerWorld());
     }
 
     private static void changeToSnow(ServerPlayerEntity player) {
@@ -42,7 +42,7 @@ public class Frost {
                     if (world.getBlockState(pos).isOf(Blocks.POWDER_SNOW)) {
                         if (world.getBlockState(pos.up()).isAir()) {
                             world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
-                            CHANGED_BLOCKS.put(pos, System.currentTimeMillis() + 5000); // Revert in 5s
+                            CHANGED_BLOCKS.put(pos, player.getUuid());
                         }
                     }
                 }
@@ -50,18 +50,37 @@ public class Frost {
         }
     }
 
-    private static void revertBlocks(net.minecraft.world.World world) {
-        long now = System.currentTimeMillis();
+    private static void revertBlocks(net.minecraft.server.world.ServerWorld world) {
+        int radius = 3;
         CHANGED_BLOCKS.entrySet().removeIf(entry -> {
-            if (now >= entry.getValue()) {
-                world.setBlockState(entry.getKey(), Blocks.POWDER_SNOW.getDefaultState());
+            BlockPos pos = entry.getKey();
+            UUID playerUUID = entry.getValue();
+
+            // If the block is no longer a snow block (e.g. broken by player), just remove the entry
+            if (!world.getBlockState(pos).isOf(Blocks.SNOW_BLOCK)) {
                 return true;
             }
+
+            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerUUID);
+
+            // If the player is offline or in a different dimension, revert the block
+            if (player == null || player.getWorld() != world) {
+                world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
+                return true;
+            }
+
+            // Revert when the player moves away from the changed block
+            double distance = player.getBlockPos().getManhattanDistance(pos);
+            if (distance > radius) {
+                world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
+                return true;
+            }
+
             return false;
         });
     }
 
-    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
+    public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         Infuse plugin = Infuse.getInstance();
         if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.FROST)) return;
 

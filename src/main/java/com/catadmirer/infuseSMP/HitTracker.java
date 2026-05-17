@@ -36,7 +36,7 @@ public class HitTracker {
 
             if (entity instanceof net.minecraft.entity.LivingEntity living) {
                 com.catadmirer.infuseSMP.effects.Speed.onAttack(attacker, living);
-                com.catadmirer.infuseSMP.effects.Regen.onAttack(attacker, living);
+                com.catadmirer.infuseSMP.effects.Regen.onAttack(attacker, living, 0f);
             }
 
             int hits = hitTracker.getOrDefault(attacker.getUuid(), 0) + 1;

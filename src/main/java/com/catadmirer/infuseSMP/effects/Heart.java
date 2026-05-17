@@ -55,7 +55,7 @@ public class Heart {
     }
 
     private static void showHealthAboveEntity(LivingEntity entity) {
-        net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity display = net.minecraft.entity.EntityType.TEXT_DISPLAY.create(entity.getWorld());
+        net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity display = net.minecraft.entity.EntityType.TEXT_DISPLAY.create(entity.getWorld(), net.minecraft.entity.SpawnReason.COMMAND);
         if (display == null) return;
         
         display.setPos(entity.getX(), entity.getY() + 2.5, entity.getZ());
@@ -66,7 +66,7 @@ public class Heart {
         display.startRiding(entity);
         
         // Remove after 10 seconds
-        Infuse.getInstance().getServer().execute(() -> {
+        entity.getWorld().getServer().execute(() -> {
             // Task scheduling in Fabric is often handled via a manager or tick loop.
             // For now, we'll use the server's execute with a delay if available or just a tick check.
         });

@@ -15,7 +15,7 @@ public class MobEntityMixin {
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void onSetTarget(LivingEntity target, CallbackInfo ci) {
         if (target instanceof PlayerEntity player) {
-            if (Infuse.getInstance().getDataManager().hasEffect(player, EffectMapping.INVIS)) {
+            if (Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.INVIS)) {
                 ci.cancel();
             }
         }

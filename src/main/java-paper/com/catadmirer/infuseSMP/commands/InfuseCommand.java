@@ -135,14 +135,14 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
                 msg.applyPlaceholder("effect_name", mapping.getName());
                 player.sendMessage(msg.toComponent());
                 break;
-            case "cleareffect":
+            case "cleareffects":
                 if (!player.isOp()) {
                     player.sendMessage(new Message(MessageType.ERROR_NOT_OP).toComponent());
                     return true;
                 }
 
                 if (args.length != 2) {
-                    player.sendMessage(new Message(MessageType.INFUSE_CLEAREFFECT_USAGE).toComponent());
+                    player.sendMessage(new Message(MessageType.INFUSE_CLEAREFFECTS_USAGE).toComponent());
                     return true;
                 }
 
@@ -156,7 +156,7 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
                 // Removing the effects from the player
                 plugin.getDataManager().removeEffect(target.getUniqueId(), "1");
                 plugin.getDataManager().removeEffect(target.getUniqueId(), "2");
-                msg = new Message(MessageType.INFUSE_CLEAREFFECT_SUCCESS);
+                msg = new Message(MessageType.INFUSE_CLEAREFFECTS_SUCCESS);
                 msg.applyPlaceholder("player_name", target.getName());
                 player.sendMessage(msg.toComponent());
                 break;
@@ -223,7 +223,7 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
             List<String> completions = new ArrayList<>(Arrays.asList("recipes", "controls"));
             
             if (sender.isOp()) {
-                completions.addAll(Arrays.asList("gui", "reload", "giveEffect", "setEffect", "clearEffect", "cooldown"));
+                completions.addAll(Arrays.asList("gui", "reload", "giveEffect", "setEffect", "clearEffects", "cooldown"));
             }
 
             return completions.stream().filter(s -> s.toLowerCase().startsWith(args[0].toLowerCase())).sorted().toList();
@@ -235,7 +235,7 @@ public class InfuseCommand implements CommandExecutor, TabCompleter {
                     return Stream.of("offhand", "command").filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase())).toList();
                 case "giveeffect":
                 case "seteffect":
-                case "cleareffect":
+                case "cleareffects":
                 case "cooldown":
                     if (!sender.isOp()) return Arrays.asList();
                     return Bukkit.getOnlinePlayers().stream().map(p -> p.getName()).filter(s -> s.toLowerCase().startsWith(args[1].toLowerCase())).toList();
