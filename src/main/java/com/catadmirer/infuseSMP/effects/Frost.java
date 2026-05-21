@@ -16,7 +16,12 @@ import java.util.Map;
 import java.util.UUID;
 
 public class Frost {
-    private static final Map<BlockPos, UUID> CHANGED_BLOCKS = new HashMap<>();
+    private static final Map<BlockPos, FrostBlockEntry> CHANGED_BLOCKS = new HashMap<>();
+
+    /**
+     * Tracks a changed block along with the player who caused the change.
+     */
+    private record FrostBlockEntry(UUID playerUUID, int radius) {}
 
     public static void applyPassiveEffects(ServerPlayerEntity player) {
         Infuse plugin = Infuse.getInstance();
@@ -26,11 +31,25 @@ public class Frost {
             player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
         }
 
-        changeToSnow(player);
+        // Only convert snow in passives if NOT in powder snow (matching upstream behavior)
+        // When in powder snow, the player gets gliding behavior instead
+        if (!player.getWorld().getBlockState(player.getBlockPos()).isOf(Blocks.POWDER_SNOW)) {
+            changeToSnow(player);
+        }
         revertBlocks(player.getServerWorld());
     }
 
-    private static void changeToSnow(ServerPlayerEntity player) {
+    /**
+     * Called when a Frost player joins the server.
+     * Converts nearby powder snow to snow blocks.
+     */
+    public static void onPlayerJoin(ServerPlayerEntity player) {
+        Infuse plugin = Infuse.getInstance();
+        if (!plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) return;
+        changeToSnow(player);
+    }
+
+    public static void changeToSnow(ServerPlayerEntity player) {
         int radius = 3;
         BlockPos center = player.getBlockPos();
         net.minecraft.world.World world = player.getWorld();
@@ -39,29 +58,32 @@ public class Frost {
             for (int dy = -radius; dy <= radius; dy++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = center.add(dx, dy, dz);
-                    if (world.getBlockState(pos).isOf(Blocks.POWDER_SNOW)) {
-                        if (world.getBlockState(pos.up()).isAir()) {
-                            world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
-                            CHANGED_BLOCKS.put(pos, player.getUuid());
-                        }
-                    }
+
+                    // Skipping non-powdered snow blocks
+                    if (!world.getBlockState(pos).isOf(Blocks.POWDER_SNOW)) continue;
+
+                    // Skipping if there is a block above this one
+                    if (!world.getBlockState(pos.up()).isAir()) continue;
+
+                    // Changing the block to regular snow
+                    world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
+                    CHANGED_BLOCKS.put(pos, new FrostBlockEntry(player.getUuid(), radius));
                 }
             }
         }
     }
 
     private static void revertBlocks(net.minecraft.server.world.ServerWorld world) {
-        int radius = 3;
         CHANGED_BLOCKS.entrySet().removeIf(entry -> {
             BlockPos pos = entry.getKey();
-            UUID playerUUID = entry.getValue();
+            FrostBlockEntry blockEntry = entry.getValue();
 
             // If the block is no longer a snow block (e.g. broken by player), just remove the entry
             if (!world.getBlockState(pos).isOf(Blocks.SNOW_BLOCK)) {
                 return true;
             }
 
-            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(playerUUID);
+            ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(blockEntry.playerUUID());
 
             // If the player is offline or in a different dimension, revert the block
             if (player == null || player.getWorld() != world) {
@@ -71,7 +93,7 @@ public class Frost {
 
             // Revert when the player moves away from the changed block
             double distance = player.getBlockPos().getManhattanDistance(pos);
-            if (distance > radius) {
+            if (distance > blockEntry.radius()) {
                 world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
                 return true;
             }

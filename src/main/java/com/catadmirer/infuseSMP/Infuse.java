@@ -4,6 +4,7 @@ import com.catadmirer.infuseSMP.commands.InfuseCommandManager;
 import com.catadmirer.infuseSMP.managers.*;
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.util.Identifier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -63,6 +64,11 @@ public class Infuse implements ModInitializer {
         dropManager.registerEvents();
         effectCraftManager.registerEvents();
         PlayerDeathListener.register();
+
+        // Register Frost join event (upstream: PlayerJoinEvent → changeToSnow)
+        ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {
+            com.catadmirer.infuseSMP.effects.Frost.onPlayerJoin(handler.getPlayer());
+        });
 
         // Register TenHit listeners
         com.catadmirer.infuseSMP.events.TenHitEvent.EVENT.register(com.catadmirer.infuseSMP.effects.Fire::onTenHit);

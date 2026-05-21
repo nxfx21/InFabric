@@ -46,6 +46,8 @@ jobs:
     steps:
       - name: Checkout Repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Download Artifacts
         uses: actions/download-artifact@v4
@@ -53,15 +55,58 @@ jobs:
           name: InfuseSMP-Jar
           path: build/libs
 
+      - name: Determine Version
+        id: version
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Count existing releases to auto-bump the build number
+          RELEASE_COUNT=$(gh release list --limit 1000 --json tagName --jq 'length')
+          BUILD_NUMBER=$((RELEASE_COUNT + 1))
+
+          # Read base version from gradle.properties
+          BASE_VERSION=$(grep '^mod_version=' gradle.properties | cut -d'=' -f2)
+
+          VERSION="${BASE_VERSION}-build.${BUILD_NUMBER}"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "build_number=${BUILD_NUMBER}" >> "$GITHUB_OUTPUT"
+
+      - name: Generate Changelog
+        id: changelog
+        run: |
+          # Get the commit title and body
+          COMMIT_TITLE=$(git log -1 --pretty=format:'%s')
+          COMMIT_BODY=$(git log -1 --pretty=format:'%b')
+
+          # Build the release body with proper formatting
+          {
+            echo "body<<CHANGELOG_EOF"
+            echo "## What's Changed"
+            echo ""
+            echo "**${COMMIT_TITLE}**"
+            echo ""
+            if [ -n "${COMMIT_BODY}" ]; then
+              echo "${COMMIT_BODY}"
+              echo ""
+            fi
+            echo "---"
+            echo ""
+            echo "### Build Info"
+            echo "- **Version:** \`${{ steps.version.outputs.version }}\`"
+            echo "- **Commit:** [\`${GITHUB_SHA::7}\`](${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/commit/${GITHUB_SHA})"
+            echo "- **Branch:** \`${GITHUB_REF_NAME}\`"
+            echo "CHANGELOG_EOF"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Create Release
         uses: softprops/action-gh-release@v3
         with:
-          tag_name: canary-${{ github.sha }}
-          name: ${{ github.event.head_commit.message }}
+          tag_name: v${{ steps.version.outputs.version }}
+          name: "InfuseSMP v${{ steps.version.outputs.version }}"
+          body: ${{ steps.changelog.outputs.body }}
           prerelease: true
           files: |
             build/libs/infusesmp-*.jar
             build/libs/infusesmp-*-sources.jar
-          generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
