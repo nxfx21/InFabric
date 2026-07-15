@@ -1,7 +1,7 @@
 package com.catadmirer.infuseSMP.mixin;
 
 import com.catadmirer.infuseSMP.Infuse;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
 import net.minecraft.entity.projectile.PersistentProjectileEntity;
@@ -28,17 +28,15 @@ public abstract class PersistentProjectileEntityMixin extends ProjectileEntity {
         if (owner instanceof ServerPlayerEntity player) {
             Infuse plugin = Infuse.getInstance();
 
-            // Strength: Piercing 100
-            if (plugin.getDataManager().hasEffect(player, EffectMapping.STRENGTH)) {
+            InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
+            if (strengthEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), strengthEffect)) {
                 invokeSetPierceLevel((byte) 100);
             }
 
-            // Fire: Set on fire
-            if (plugin.getDataManager().hasEffect(player, EffectMapping.FIRE)) {
+            InfuseEffect fireEffect = InfuseEffect.fromString("fire");
+            if (fireEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), fireEffect)) {
                 ((PersistentProjectileEntity) (Object) this).setOnFireFor(100);
             }
-            
-            // Speed: Velocity multiplier (This is better handled in BowItem)
         }
     }
 }

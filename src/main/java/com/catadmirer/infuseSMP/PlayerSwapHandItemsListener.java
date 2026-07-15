@@ -1,7 +1,7 @@
 package com.catadmirer.infuseSMP;
 
 import com.catadmirer.infuseSMP.managers.DataManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+
 import net.minecraft.server.network.ServerPlayerEntity;
 import java.util.UUID;
 
@@ -17,8 +17,8 @@ public class PlayerSwapHandItemsListener {
         UUID playerUUID = player.getUuid();
         String data = dataManager.getControlMode(playerUUID);
         if ("offhand".equals(data)) {
-            EffectMapping lEffect = dataManager.getEffect(player.getUuid(), "1");
-            EffectMapping rEffect = dataManager.getEffect(player.getUuid(), "2");
+            com.catadmirer.infuseSMP.effects.InfuseEffect lEffect = dataManager.getEffect(player.getUuid(), "1");
+            com.catadmirer.infuseSMP.effects.InfuseEffect rEffect = dataManager.getEffect(player.getUuid(), "2");
 
             if (player.isSneaking()) {
                 if (rEffect != null) {

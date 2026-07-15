@@ -1,7 +1,7 @@
 package com.catadmirer.infuseSMP.mixin;
 
 import com.catadmirer.infuseSMP.Infuse;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.mob.MobEntity;
 import net.minecraft.entity.player.PlayerEntity;
@@ -15,7 +15,8 @@ public class MobEntityMixin {
     @Inject(method = "setTarget", at = @At("HEAD"), cancellable = true)
     private void onSetTarget(LivingEntity target, CallbackInfo ci) {
         if (target instanceof PlayerEntity player) {
-            if (Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), EffectMapping.INVIS)) {
+            InfuseEffect invisEffect = InfuseEffect.fromString("invis");
+            if (invisEffect != null && Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), invisEffect)) {
                 ci.cancel();
             }
         }

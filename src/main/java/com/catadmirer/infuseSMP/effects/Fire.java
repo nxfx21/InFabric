@@ -1,8 +1,11 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -10,33 +13,67 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
 
-public class Fire {
-    
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.FIRE)) return;
+public class Fire extends InfuseEffect {
+    private final Infuse plugin;
 
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
+    public Fire() {
+        this(false);
+    }
+
+    public Fire(boolean augmented) {
+        super("fire", EffectIds.FIRE, augmented, EffectConstants.potionColor(EffectIds.FIRE), EffectConstants.ritualColor(EffectIds.FIRE));
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {
+        owner.addStatusEffect(new StatusEffectInstance(StatusEffects.FIRE_RESISTANCE, 40, 0, false, false));
+    }
+
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
+        if (CooldownManager.isOnCooldown(playerUUID, "fire")) return;
+
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1, 1);
+
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
+
+        CooldownManager.setTimes(playerUUID, "fire", duration, cooldown);
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Fire();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Fire(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_FIRE_NAME : MessageType.FIRE_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_FIRE_LORE : MessageType.FIRE_LORE);
     }
 
     public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.FIRE)) return;
+        InfuseEffect fireEffect = InfuseEffect.fromString("fire");
+        if (fireEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), fireEffect)) return;
 
-        target.setOnFireFor(5); // 5 seconds
-    }
-
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
-
-        if (CooldownManager.isOnCooldown(playerUUID, "fire")) return;
-
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_ACTIVATE, SoundCategory.PLAYERS, 1, 1);
-
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_FIRE : EffectMapping.FIRE);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_FIRE : EffectMapping.FIRE);
-
-        CooldownManager.setTimes(playerUUID, "fire", duration, cooldown);
+        target.setOnFireFor(5);
     }
 }

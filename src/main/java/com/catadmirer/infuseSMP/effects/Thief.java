@@ -1,48 +1,85 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
 
-public class Thief {
+public class Thief extends InfuseEffect {
+    private final Infuse plugin;
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        // Thief passive
+    public Thief() {
+        this(false);
     }
 
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
+    public Thief(boolean augmented) {
+        super("thief", EffectIds.THIEF, augmented, EffectConstants.potionColor(EffectIds.THIEF), EffectConstants.ritualColor(EffectIds.THIEF));
+        this.plugin = Infuse.getInstance();
+    }
 
+    @Override
+    public void equip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {}
+
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
         if (CooldownManager.isOnCooldown(playerUUID, "thief")) return;
 
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
 
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_THIEF : EffectMapping.THIEF);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_THIEF : EffectMapping.THIEF);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
         CooldownManager.setTimes(playerUUID, "thief", duration, cooldown);
         
-        for (net.minecraft.entity.Entity entity : player.getWorld().getOtherEntities(player, player.getBoundingBox().expand(10))) {
+        for (net.minecraft.entity.Entity entity : owner.getWorld().getOtherEntities(owner, owner.getBoundingBox().expand(10))) {
             if (entity instanceof ServerPlayerEntity victim) {
-                if (plugin.getDataManager().isTrusted(victim.getUuid(), player.getUuid())) continue;
+                if (plugin.getDataManager().isTrusted(victim.getUuid(), owner.getUuid())) continue;
                 
-                EffectMapping effect1 = plugin.getDataManager().getEffect(victim.getUuid(), "1");
-                EffectMapping effect2 = plugin.getDataManager().getEffect(victim.getUuid(), "2");
+                InfuseEffect effect1 = plugin.getDataManager().getEffect(victim.getUuid(), "1");
+                InfuseEffect effect2 = plugin.getDataManager().getEffect(victim.getUuid(), "2");
                 
-                EffectMapping stolen = effect1 != null ? effect1 : effect2;
+                InfuseEffect stolen = effect1 != null ? effect1 : effect2;
                 if (stolen != null) {
                     plugin.getDataManager().setEffect(victim.getUuid(), effect1 != null ? "1" : "2", null);
-                    plugin.getDataManager().setEffect(player.getUuid(), "1", stolen); // For now just set to slot 1
-                    player.sendMessage(net.minecraft.text.Text.literal("Stole " + stolen.getKey() + " from " + victim.getName().getString()), true);
+                    plugin.getDataManager().setEffect(owner.getUuid(), "1", stolen); // For now just set to slot 1
+                    owner.sendMessage(net.minecraft.text.Text.literal("Stole " + stolen.getKey() + " from " + victim.getName().getString()), true);
                     victim.sendMessage(net.minecraft.text.Text.literal("Your " + stolen.getKey() + " was stolen!"), true);
                     break;
                 }
             }
         }
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Thief();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Thief(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_THIEF_NAME : MessageType.THIEF_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_THIEF_LORE : MessageType.THIEF_LORE);
     }
 }

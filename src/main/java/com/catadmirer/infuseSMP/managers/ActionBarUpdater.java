@@ -25,7 +25,7 @@ public class ActionBarUpdater {
         if (ticks % 20 != 0) return; // Run every 20 ticks
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
-            EffectMapping effect;
+            com.catadmirer.infuseSMP.effects.InfuseEffect effect;
 
             String placeholder = Infuse.getInstance().getMainConfig().emptyEffectIcon() ? "\ue901\ue904" : "";
 
@@ -41,11 +41,11 @@ public class ActionBarUpdater {
             
             if (effect != null) {
                 leftEmoji = effect.getIcon() + "\ue904";
-                String key = effect.regular().getKey();
+                String key = effect.getRegularVersion().getKey();
                 if (CooldownManager.isEffectActive(uuid, key)) {
                     leftEmoji = String.valueOf(effect.getActiveIcon());
                     long timeLeft = CooldownManager.getEffectTimeLeft(uuid, key) / 1000L;
-                    leftTime = "<#" + Integer.toHexString(effect.getColor().getRGB() & 0xFFFFFF) + ">" + MessageUtil.formatTime(timeLeft);
+                    leftTime = "<#" + Integer.toHexString(effect.getPotionColor().getRGB() & 0xFFFFFF) + ">" + MessageUtil.formatTime(timeLeft);
                     rightPad = getSpaceTimeStr(stripTags(leftTime));
                 } else if (CooldownManager.isOnCooldown(uuid, key)) {
                     long timeLeft = CooldownManager.getCooldownTimeLeft(uuid, key) / 1000L;
@@ -57,11 +57,11 @@ public class ActionBarUpdater {
             effect = Infuse.getInstance().getDataManager().getEffect(uuid, "2");
             if (effect != null) {
                 rightEmoji = effect.getIcon() + "\ue904";
-                String key = effect.regular().getKey();
+                String key = effect.getRegularVersion().getKey();
                 if (CooldownManager.isEffectActive(uuid, key)) {
                     rightEmoji = String.valueOf(effect.getActiveIcon());
                     long timeLeft = CooldownManager.getEffectTimeLeft(uuid, key) / 1000L;
-                    rightTime = "<#" + Integer.toHexString(effect.getColor().getRGB() & 0xFFFFFF) + ">" + MessageUtil.formatTime(timeLeft);
+                    rightTime = "<#" + Integer.toHexString(effect.getPotionColor().getRGB() & 0xFFFFFF) + ">" + MessageUtil.formatTime(timeLeft);
                     leftPad = getSpaceTimeStr(stripTags(rightTime));
                 } else if (CooldownManager.isOnCooldown(uuid, key)) {
                     long timeLeft = CooldownManager.getCooldownTimeLeft(uuid, key) / 1000L;

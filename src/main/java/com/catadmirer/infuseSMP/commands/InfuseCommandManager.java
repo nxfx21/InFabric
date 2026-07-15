@@ -3,7 +3,7 @@ package com.catadmirer.infuseSMP.commands;
 import com.catadmirer.infuseSMP.Infuse;
 import com.catadmirer.infuseSMP.Message;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
@@ -66,7 +66,7 @@ public class InfuseCommandManager {
                         .executes(context -> {
                             ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
                             String effectKey = StringArgumentType.getString(context, "effect");
-                            EffectMapping mapping = EffectMapping.fromEffectKey(effectKey);
+                            com.catadmirer.infuseSMP.effects.InfuseEffect mapping = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString(effectKey);
                             if (mapping == null) {
                                 context.getSource().sendMessage(Message.toComponent(Message.MessageType.INFUSE_INVALID_PARAM.defaultValue));
                                 return 0;

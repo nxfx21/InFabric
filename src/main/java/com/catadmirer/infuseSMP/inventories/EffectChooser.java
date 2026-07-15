@@ -1,6 +1,6 @@
 package com.catadmirer.infuseSMP.inventories;
 
-import com.catadmirer.infuseSMP.managers.EffectMapping;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -13,18 +13,19 @@ public class EffectChooser extends SimpleGui {
         this.setTitle(Text.literal("Effect Chooser"));
         
         int slot = 0;
-        for (EffectMapping mapping : EffectMapping.values()) {
-            if (mapping.name().startsWith("AUG_")) continue; // Only regular ones or both?
+        for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
+            if (effect.isAugmented()) continue; // Handled below or handled individually
             
-            this.setSlot(slot++, mapping.createItem(), (index, type, action, gui) -> {
-                player.getInventory().insertStack(mapping.createItem());
-                player.sendMessage(Text.literal("Gave you " + mapping.getKey()), true);
+            this.setSlot(slot++, effect.createItem(), (index, type, action, gui) -> {
+                player.getInventory().insertStack(effect.createItem());
+                player.sendMessage(Text.literal("Gave you " + effect.getKey()), true);
             });
             
-            if (mapping.augmented() != null) {
-                this.setSlot(slot++, mapping.augmented().createItem(), (index, type, action, gui) -> {
-                    player.getInventory().insertStack(mapping.augmented().createItem());
-                    player.sendMessage(Text.literal("Gave you " + mapping.augmented().getKey()), true);
+            InfuseEffect augmented = effect.getAugmentedVersion();
+            if (augmented != null) {
+                this.setSlot(slot++, augmented.createItem(), (index, type, action, gui) -> {
+                    player.getInventory().insertStack(augmented.createItem());
+                    player.sendMessage(Text.literal("Gave you " + augmented.getKey()), true);
                 });
             }
             

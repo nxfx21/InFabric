@@ -54,8 +54,8 @@ public class RecipeManager {
         load();
     }
 
-    public boolean isRecipeEnabled(EffectMapping mapping) {
-        String key = mapping.regular().getKey();
+    public boolean isRecipeEnabled(com.catadmirer.infuseSMP.effects.InfuseEffect mapping) {
+        String key = mapping.getRegularVersion().getKey();
         if (config.has(key) && config.getAsJsonObject(key).has("enabled")) {
             return config.getAsJsonObject(key).get("enabled").getAsBoolean();
         }

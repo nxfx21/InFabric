@@ -23,5 +23,6 @@ public class PlayerDeathListener {
             head.set(DataComponentTypes.PROFILE, new ProfileComponent(player.getGameProfile()));
             player.getWorld().spawnEntity(new net.minecraft.entity.ItemEntity(player.getWorld(), player.getX(), player.getY(), player.getZ(), head));
         }
+        plugin.getEffectManager().handleDeath(player);
     }
 }

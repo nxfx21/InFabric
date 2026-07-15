@@ -1,6 +1,7 @@
 package com.catadmirer.infuseSMP.inventories;
 
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -13,11 +14,11 @@ public class RecipeListGUI extends SimpleGui {
         this.setTitle(Text.literal("Recipes"));
         
         int slot = 0;
-        for (com.catadmirer.infuseSMP.managers.EffectMapping mapping : com.catadmirer.infuseSMP.managers.EffectMapping.values()) {
-            if (mapping.name().startsWith("AUG_")) continue;
+        for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
+            if (effect.isAugmented()) continue;
             
-            if (Infuse.getInstance().getRecipeManager().isRecipeEnabled(mapping)) {
-                this.setSlot(slot++, mapping.createItem());
+            if (Infuse.getInstance().getRecipeManager().isRecipeEnabled(effect)) {
+                this.setSlot(slot++, effect.createItem());
             }
             
             if (slot >= 54) break;

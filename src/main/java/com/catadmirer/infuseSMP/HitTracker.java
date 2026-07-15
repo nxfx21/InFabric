@@ -1,20 +1,36 @@
 package com.catadmirer.infuseSMP;
 
 import com.catadmirer.infuseSMP.events.TenHitEvent;
+import com.catadmirer.infuseSMP.effects.InfuseEffect;
+import com.catadmirer.infuseSMP.effects.Thunder;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Queue;
 import java.util.UUID;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class HitTracker {
     private final Infuse plugin;
     private final Map<UUID, Integer> hitTracker = new HashMap<>();
     private final Queue<Runnable> decayQueue = new ConcurrentLinkedQueue<>();
+
+    private static class ScheduledTask {
+        long runAtTick;
+        Runnable task;
+        ScheduledTask(long runAtTick, Runnable task) {
+            this.runAtTick = runAtTick;
+            this.task = task;
+        }
+    }
+    private final List<ScheduledTask> scheduledTasks = new ArrayList<>();
+    private long currentTick = 0;
 
     public HitTracker() {
         this.plugin = Infuse.getInstance();
@@ -28,7 +44,12 @@ public class HitTracker {
                 return ActionResult.PASS;
             }
 
-            // In Fabric, getAttackCooldownProgress takes a tick delta (e.g. 0.5f)
+            // Skipping the hit if the attacker trusts the target
+            if (plugin.getDataManager().isTrusted(attacker.getUuid(), target.getUuid())) {
+                return ActionResult.PASS;
+            }
+
+            // Vanilla attack cooldown needs to be at 84.8% to be a normal hit.
             float cooldownProgress = attacker.getAttackCooldownProgress(0.5f);
             if (cooldownProgress < 0.85f) {
                 return ActionResult.PASS;
@@ -41,7 +62,13 @@ public class HitTracker {
 
             int hits = hitTracker.getOrDefault(attacker.getUuid(), 0) + 1;
             
-            if (hits == 10) {
+            // Incrementing by 2 if the thunder effect is registered, the attacker has it, and if they are in the rain.
+            InfuseEffect thunder = InfuseEffect.fromString("thunder");
+            if (thunder != null && plugin.getDataManager().hasEffect(attacker.getUuid(), thunder) && attacker.getWorld().hasRain(attacker.getBlockPos())) {
+                hits += 1;
+            }
+            
+            if (hits >= 10) {
                 TenHitEvent.EVENT.invoker().onTenHits(attacker, target);
                 hitTracker.put(attacker.getUuid(), 0);
 
@@ -64,9 +91,14 @@ public class HitTracker {
                 }
             });
 
-            // Schedule the decay using a custom scheduler or MinecraftServer timer (simplified here)
-            // TODO: Use actual server ticks to schedule `decayQueue.peek().run()` later.
-            // (We'll integrate this with GlobalLoop or a Scheduler class)
+            // Schedule the decay using actual server ticks
+            scheduledTasks.add(new ScheduledTask(currentTick + hitCounterDecaySeconds * 20L, () -> {
+                Runnable decayTask = decayQueue.peek();
+                if (decayTask != null) {
+                    decayQueue.remove();
+                    decayTask.run();
+                }
+            }));
 
             return ActionResult.PASS;
         });
@@ -76,12 +108,18 @@ public class HitTracker {
         });
     }
 
+    public void scheduleTask(long delayTicks, Runnable task) {
+        scheduledTasks.add(new ScheduledTask(currentTick + delayTicks, task));
+    }
+
     public void tick() {
-        // This is a simplified decay logic. In a real scenario, you'd want to track the time for each hit separately.
-        // But for this port, we'll just run one decay task every few ticks if the queue is not empty.
-        Runnable decayTask = decayQueue.poll();
-        if (decayTask != null) {
-            decayTask.run();
-        }
+        currentTick++;
+        scheduledTasks.removeIf(task -> {
+            if (currentTick >= task.runAtTick) {
+                task.task.run();
+                return true;
+            }
+            return false;
+        });
     }
 }

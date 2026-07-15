@@ -94,6 +94,9 @@ public class MainConfig {
     public boolean enableThief() { return getBoolean("extra_effects_Thief", false); }
 
     public double emeraldLockDurationSeconds() { return getDouble("emerald_lock_duration_seconds", 10.0); }
+    public double apophisLockDurationSeconds() { return getDouble("apophis_lock_duration_seconds", 10.0); }
+    public double emeraldMultiplierStandard() { return getDouble("emerald_multiplier_standard", 2.0); }
+    public double emeraldMultiplierUseEffect() { return getDouble("emerald_multiplier_use_effect", 4.0); }
     public boolean invisHideKills() { return getBoolean("invis_hide_kills", false); }
     public boolean invisHideDeaths() { return getBoolean("invis_hide_deaths", false); }
 
@@ -102,22 +105,44 @@ public class MainConfig {
     public int oceanPullInterval() { return getInt("ocean_pulling_pull_interval", 10); }
     public int oceanPullRadius() { return getInt("ocean_pulling_pull_radius", 5); }
     public double oceanPullStrength() { return getDouble("ocean_pulling_pull_strength", 0.5); }
+    public double enderPassiveRadius() { return getDouble("ender_passive_radius", 10.0); }
+    public int enderSparkMaxDistance() { return getInt("ender_spark_max_distance", 15); }
+    public int oceanPassiveDrownStrength() { return getInt("ocean_passive_drown_strength", 5); }
+    public int oceanPassiveDrownDamage() { return getInt("ocean_passive_drown_damage", 1); }
+    public int oceanSparkDrownStrength() { return getInt("ocean_spark_drown_strength", 20); }
+    public int oceanSparkDrownDamage() { return getInt("ocean_spark_drown_damage", 2); }
     public int hitCounterDecaySeconds() { return getInt("hit_counter_decay_seconds", 15); }
     public int emeraldExpPerHit() { return getInt("emerald_xp_stolen_per_hit", 15); }
     public float emeraldExpPercent() { return (float) getDouble("emerald_xp_stolen_percent", 1.0); }
     public float emeraldPercentExpToShare() { return (float) getDouble("emerald_percent_xp_to_share", 0.5); }
 
+    public int apophisLootingLevel() { return getInt("apophis_enchantment_looting_level", 5); }
     public int emeraldLootingLevel() { return getInt("emerald_enchantment_looting_level", 3); }
     public int hasteFortuneLevel() { return getInt("haste_enchantment_fortune_level", 5); }
     public int hasteEfficiencyLevel() { return getInt("haste_enchantment_efficiency_level", 10); }
     public int hasteUnbreakingLevel() { return getInt("haste_enchantment_unbreaking_level", 5); }
 
-    public long cooldown(com.catadmirer.infuseSMP.managers.EffectMapping effect) {
+    public long cooldown(com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         return getInt("cooldowns." + effect.getKey(), 60);
     }
 
-    public long duration(com.catadmirer.infuseSMP.managers.EffectMapping effect) {
+    public long duration(com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         return getInt("durations." + effect.getKey(), 30);
+    }
+
+    public java.util.List<com.catadmirer.infuseSMP.effects.InfuseEffect> joinEffects() {
+        if (!config.has("join_effects") || !config.get("join_effects").isJsonArray()) {
+            return java.util.Collections.emptyList();
+        }
+        com.google.gson.JsonArray arr = config.getAsJsonArray("join_effects");
+        java.util.List<com.catadmirer.infuseSMP.effects.InfuseEffect> list = new java.util.ArrayList<>();
+        for (com.google.gson.JsonElement el : arr) {
+            com.catadmirer.infuseSMP.effects.InfuseEffect eff = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString(el.getAsString());
+            if (eff != null) {
+                list.add(eff);
+            }
+        }
+        return list;
     }
 
     public void applyUpdates() {

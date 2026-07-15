@@ -67,14 +67,14 @@ public class DataManager {
         return config.getAsJsonObject(key);
     }
 
-    public int getExistingCount(EffectMapping effect) {
+    public int getExistingCount(com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         JsonObject existing = getOrCreateObject("existing-effects");
-        return existing.has(effect.getKey()) ? existing.get(effect.getKey()).getAsInt() : 0;
+        return existing.has(effect.toString()) ? existing.get(effect.toString()).getAsInt() : 0;
     }
 
-    public void setExistingCount(EffectMapping effect, int crafted) {
+    public void setExistingCount(com.catadmirer.infuseSMP.effects.InfuseEffect effect, int crafted) {
         JsonObject existing = getOrCreateObject("existing-effects");
-        existing.addProperty(effect.getKey(), crafted);
+        existing.addProperty(effect.toString(), crafted);
         save();
     }
 
@@ -120,51 +120,55 @@ public class DataManager {
         return getTrusted(caster).contains(trusted);
     }
 
-    public void setEffect(UUID playerUUID, String slot, @Nullable EffectMapping effect) {
+    public void setEffect(UUID playerUUID, String slot, @Nullable com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         if (effect == null) {
             pData.remove(slot);
         } else {
-            pData.addProperty(slot, effect.getKey());
+            pData.addProperty(slot, effect.toString());
         }
         save();
     }
 
     @Nullable
-    public EffectMapping getEffect(UUID playerUUID, String slot) {
+    public com.catadmirer.infuseSMP.effects.InfuseEffect getEffect(UUID playerUUID, String slot) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         if (!pData.has(slot)) return null;
         String effectKey = pData.get(slot).getAsString();
-        EffectMapping effect = EffectMapping.fromEffectKey(effectKey);
+        com.catadmirer.infuseSMP.effects.InfuseEffect effect = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString(effectKey);
         if (effectKey != null && effect == null) {
-            Infuse.LOGGER.warn("No valid ability found for the equipped effect.");
+            Infuse.LOGGER.warn("No valid ability found for the equipped effect: " + effectKey);
         }
         return effect;
     }
 
-    public boolean hasEffect(UUID player, EffectMapping effect) {
+    public boolean hasEffect(UUID player, com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         return hasEffect(player, effect, false);
     }
 
-    public boolean hasEffect(UUID player, EffectMapping effect, boolean differentiateAugmented) {
+    public boolean hasEffect(UUID player, com.catadmirer.infuseSMP.effects.InfuseEffect effect, boolean differentiateAugmented) {
         return hasEffect(player, effect, differentiateAugmented, "1") || hasEffect(player, effect, differentiateAugmented, "2");
     }
 
-    public boolean hasEffect(UUID player, EffectMapping effect, String slot) {
+    public boolean hasEffect(UUID player, com.catadmirer.infuseSMP.effects.InfuseEffect effect, String slot) {
         return hasEffect(player, effect, false, slot);
     }
 
-    public boolean hasEffect(net.minecraft.server.network.ServerPlayerEntity player, EffectMapping effect) {
+    public boolean hasEffect(net.minecraft.server.network.ServerPlayerEntity player, com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         return hasEffect(player.getUuid(), effect);
     }
 
-    public boolean hasEffect(UUID player, EffectMapping effect, boolean differentiateAugmented, String slot) {
-        EffectMapping equippedEffect = getEffect(player, slot);
+    public boolean hasEffect(UUID player, com.catadmirer.infuseSMP.effects.InfuseEffect effect, boolean differentiateAugmented, String slot) {
+        com.catadmirer.infuseSMP.effects.InfuseEffect equippedEffect = getEffect(player, slot);
         if (equippedEffect == null) return false;
         if (differentiateAugmented) {
             return effect.equals(equippedEffect);
         }
         return effect.getId() == equippedEffect.getId();
+    }
+
+    public boolean hasAnyData(UUID playerUUID) {
+        return config.has(playerUUID.toString());
     }
 
     public void removeEffect(UUID playerUUID, String slot) {

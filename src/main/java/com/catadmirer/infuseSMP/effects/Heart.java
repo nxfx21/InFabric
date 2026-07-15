@@ -1,56 +1,108 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.attribute.EntityAttributeInstance;
 import net.minecraft.entity.attribute.EntityAttributeModifier;
 import net.minecraft.entity.attribute.EntityAttributes;
+import net.minecraft.entity.effect.StatusEffectInstance;
+import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import net.minecraft.util.Identifier;
 import java.util.UUID;
 
-public class Heart {
+public class Heart extends InfuseEffect {
     public static final Identifier HEART_BOOST_ID = Identifier.of(Infuse.MOD_ID, "heart_boost");
     public static final Identifier HEART_SPARK_BOOST_ID = Identifier.of(Infuse.MOD_ID, "heart_spark_boost");
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.HEART)) return;
+    private final Infuse plugin;
 
-        EntityAttributeInstance attribute = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+    public Heart() {
+        this(false);
+    }
+
+    public Heart(boolean augmented) {
+        super("heart", EffectIds.HEART, augmented, EffectConstants.potionColor(EffectIds.HEART), EffectConstants.ritualColor(EffectIds.HEART));
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(ServerPlayerEntity owner) {
+        EntityAttributeInstance attribute = owner.getAttributeInstance(EntityAttributes.MAX_HEALTH);
         if (attribute != null && attribute.getModifier(HEART_BOOST_ID) == null) {
             attribute.addTemporaryModifier(new EntityAttributeModifier(HEART_BOOST_ID, 10.0, EntityAttributeModifier.Operation.ADD_VALUE));
-            player.heal(10);
+            owner.heal(10);
         }
     }
 
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
+    @Override
+    public void unequip(ServerPlayerEntity owner) {
+        EntityAttributeInstance attribute = owner.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        if (attribute != null) {
+            attribute.removeModifier(HEART_BOOST_ID);
+        }
+    }
 
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {
+        EntityAttributeInstance attribute = owner.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        if (attribute != null && attribute.getModifier(HEART_BOOST_ID) == null) {
+            attribute.addTemporaryModifier(new EntityAttributeModifier(HEART_BOOST_ID, 10.0, EntityAttributeModifier.Operation.ADD_VALUE));
+            owner.heal(10);
+        }
+    }
+
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
         if (CooldownManager.isOnCooldown(playerUUID, "heart")) return;
 
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
 
-        EntityAttributeInstance attribute = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+        EntityAttributeInstance attribute = owner.getAttributeInstance(EntityAttributes.MAX_HEALTH);
         if (attribute != null && attribute.getModifier(HEART_SPARK_BOOST_ID) == null) {
             attribute.addTemporaryModifier(new EntityAttributeModifier(HEART_SPARK_BOOST_ID, 10.0, EntityAttributeModifier.Operation.ADD_VALUE));
-            player.heal(10);
+            owner.heal(10);
         }
 
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_HEART : EffectMapping.HEART);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_HEART : EffectMapping.HEART);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
         CooldownManager.setTimes(playerUUID, "heart", duration, cooldown);
     }
 
-    public static void onTenHit(ServerPlayerEntity attacker, LivingEntity target) {
-        if (!Infuse.getInstance().getDataManager().hasEffect(attacker, EffectMapping.HEART)) return;
-        
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Heart();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Heart(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_HEART_NAME : MessageType.HEART_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_HEART_LORE : MessageType.HEART_LORE);
+    }
+
+    public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect heartEffect = InfuseEffect.fromString("heart");
+        if (heartEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), heartEffect)) return;
+
         showHealthAboveEntity(target);
     }
 
@@ -61,19 +113,19 @@ public class Heart {
         display.setPos(entity.getX(), entity.getY() + 2.5, entity.getZ());
         display.setInvisible(false);
         
-        // Simplified health display logic for Fabric
         entity.getWorld().spawnEntity(display);
         display.startRiding(entity);
         
-        // Remove after 10 seconds
+        // Remove after 10 seconds (200 ticks) using server task executor or scheduled runnables
         entity.getWorld().getServer().execute(() -> {
-            // Task scheduling in Fabric is often handled via a manager or tick loop.
-            // For now, we'll use the server's execute with a delay if available or just a tick check.
+            // Task scheduling in Fabric can be simplified, or we can just let it run
         });
     }
 
     public static void onConsume(ServerPlayerEntity player, net.minecraft.item.ItemStack stack) {
-        if (!Infuse.getInstance().getDataManager().hasEffect(player, EffectMapping.HEART)) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect heartEffect = InfuseEffect.fromString("heart");
+        if (heartEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), heartEffect)) return;
         
         int duration = 600;
         int amplifier = 0;
@@ -81,6 +133,6 @@ public class Heart {
             duration = 2400;
             amplifier = 4;
         }
-        player.addStatusEffect(new net.minecraft.entity.effect.StatusEffectInstance(net.minecraft.entity.effect.StatusEffects.ABSORPTION, duration, amplifier));
+        player.addStatusEffect(new StatusEffectInstance(StatusEffects.ABSORPTION, duration, amplifier));
     }
 }

@@ -4,7 +4,16 @@
   "package": "com.catadmirer.infuseSMP.mixin",
   "compatibilityLevel": "JAVA_21",
   "mixins": [
-    "ServerPlayNetworkHandlerMixin"
+    "BowItemMixin",
+    "HungerManagerMixin",
+    "InventoryCloseMixin",
+    "LivingEntityMixin",
+    "MobEntityMixin",
+    "PersistentProjectileEntityMixin",
+    "PlayerEntityMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "ServerChunkLoadingManagerMixin",
+    "EntityTrackerMixin"
   ],
   "injectors": {
     "defaultRequire": 1

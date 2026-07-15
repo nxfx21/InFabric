@@ -1,8 +1,11 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.block.Blocks;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.effect.StatusEffectInstance;
@@ -15,37 +18,88 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
-public class Frost {
+public class Frost extends InfuseEffect {
     private static final Map<BlockPos, FrostBlockEntry> CHANGED_BLOCKS = new HashMap<>();
 
-    /**
-     * Tracks a changed block along with the player who caused the change.
-     */
+    private final Infuse plugin;
+
     private record FrostBlockEntry(UUID playerUUID, int radius) {}
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) return;
-
-        if (player.getWorld().getBlockState(player.getBlockPos().down()).isOf(Blocks.ICE)) {
-            player.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
-        }
-
-        // Only convert snow in passives if NOT in powder snow (matching upstream behavior)
-        // When in powder snow, the player gets gliding behavior instead
-        if (!player.getWorld().getBlockState(player.getBlockPos()).isOf(Blocks.POWDER_SNOW)) {
-            changeToSnow(player);
-        }
-        revertBlocks(player.getServerWorld());
+    public Frost() {
+        this(false);
     }
 
-    /**
-     * Called when a Frost player joins the server.
-     * Converts nearby powder snow to snow blocks.
-     */
+    public Frost(boolean augmented) {
+        super("frost", EffectIds.FROST, augmented, EffectConstants.potionColor(EffectIds.FROST), EffectConstants.ritualColor(EffectIds.FROST));
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(ServerPlayerEntity owner) {
+        changeToSnow(owner);
+    }
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {
+        if (owner.getWorld().getBlockState(owner.getBlockPos().down()).isOf(net.minecraft.block.Blocks.ICE)) {
+            owner.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
+        }
+
+        if (!owner.getWorld().getBlockState(owner.getBlockPos()).isOf(Blocks.POWDER_SNOW)) {
+            changeToSnow(owner);
+        }
+        revertBlocks(owner.getServerWorld());
+    }
+
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
+        if (CooldownManager.isOnCooldown(playerUUID, "frost")) return;
+
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
+
+        CooldownManager.setTimes(playerUUID, "frost", duration, cooldown);
+        
+        for (net.minecraft.entity.Entity entity : owner.getWorld().getOtherEntities(owner, owner.getBoundingBox().expand(10))) {
+            if (entity instanceof LivingEntity living) {
+                if (entity instanceof ServerPlayerEntity nearby && plugin.getDataManager().isTrusted(nearby.getUuid(), owner.getUuid())) continue;
+                living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int)(duration * 20), 2, false, false));
+                living.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, (int)(duration * 20), 2, false, false));
+                living.setFrozenTicks(200);
+            }
+        }
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Frost();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Frost(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_FROST_NAME : MessageType.FROST_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_FROST_LORE : MessageType.FROST_LORE);
+    }
+
     public static void onPlayerJoin(ServerPlayerEntity player) {
         Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.FROST)) return;
+        InfuseEffect frostEffect = InfuseEffect.fromString("frost");
+        if (frostEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), frostEffect)) return;
         changeToSnow(player);
     }
 
@@ -58,14 +112,9 @@ public class Frost {
             for (int dy = -radius; dy <= radius; dy++) {
                 for (int dz = -radius; dz <= radius; dz++) {
                     BlockPos pos = center.add(dx, dy, dz);
-
-                    // Skipping non-powdered snow blocks
                     if (!world.getBlockState(pos).isOf(Blocks.POWDER_SNOW)) continue;
-
-                    // Skipping if there is a block above this one
                     if (!world.getBlockState(pos.up()).isAir()) continue;
 
-                    // Changing the block to regular snow
                     world.setBlockState(pos, Blocks.SNOW_BLOCK.getDefaultState());
                     CHANGED_BLOCKS.put(pos, new FrostBlockEntry(player.getUuid(), radius));
                 }
@@ -78,20 +127,16 @@ public class Frost {
             BlockPos pos = entry.getKey();
             FrostBlockEntry blockEntry = entry.getValue();
 
-            // If the block is no longer a snow block (e.g. broken by player), just remove the entry
             if (!world.getBlockState(pos).isOf(Blocks.SNOW_BLOCK)) {
                 return true;
             }
 
             ServerPlayerEntity player = world.getServer().getPlayerManager().getPlayer(blockEntry.playerUUID());
-
-            // If the player is offline or in a different dimension, revert the block
             if (player == null || player.getWorld() != world) {
                 world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
                 return true;
             }
 
-            // Revert when the player moves away from the changed block
             double distance = player.getBlockPos().getManhattanDistance(pos);
             if (distance > blockEntry.radius()) {
                 world.setBlockState(pos, Blocks.POWDER_SNOW.getDefaultState());
@@ -104,31 +149,9 @@ public class Frost {
 
     public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {
         Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.FROST)) return;
+        InfuseEffect frostEffect = InfuseEffect.fromString("frost");
+        if (frostEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), frostEffect)) return;
 
         target.setFrozenTicks(200);
-    }
-
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
-
-        if (CooldownManager.isOnCooldown(playerUUID, "frost")) return;
-
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
-
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_FROST : EffectMapping.FROST);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_FROST : EffectMapping.FROST);
-
-        CooldownManager.setTimes(playerUUID, "frost", duration, cooldown);
-        
-        for (net.minecraft.entity.Entity entity : player.getWorld().getOtherEntities(player, player.getBoundingBox().expand(10))) {
-            if (entity instanceof LivingEntity living) {
-                if (entity instanceof ServerPlayerEntity nearby && plugin.getDataManager().isTrusted(nearby.getUuid(), player.getUuid())) continue;
-                living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, (int)(duration * 20 / 1000), 2, false, false));
-                living.addStatusEffect(new StatusEffectInstance(StatusEffects.MINING_FATIGUE, (int)(duration * 20 / 1000), 2, false, false));
-                living.setFrozenTicks(200);
-            }
-        }
     }
 }

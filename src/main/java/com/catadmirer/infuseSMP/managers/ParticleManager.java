@@ -16,17 +16,17 @@ public class ParticleManager {
     }
 
     public void spawnEffectParticles(ServerPlayerEntity player, String slot) {
-        EffectMapping effect = Infuse.getInstance().getDataManager().getEffect(player.getUuid(), slot);
+        com.catadmirer.infuseSMP.effects.InfuseEffect effect = Infuse.getInstance().getDataManager().getEffect(player.getUuid(), slot);
         if (effect == null) return;
 
         ServerWorld world = (ServerWorld) player.getWorld();
 
-        if (effect == EffectMapping.ENDER || effect == EffectMapping.AUG_ENDER) {
+        if (effect.getKey().equals("ender")) {
             world.spawnParticles(ParticleTypes.REVERSE_PORTAL, player.getX(), player.getY() + 1, player.getZ(), 32, 0.3, 0.5, 0.3, 0);
             return;
         }
 
-        int argb = effect.getColor().getRGB();
+        int argb = effect.getPotionColor().getRGB();
         // Fabric EntityEffectParticleEffect
         EntityEffectParticleEffect particleEffect = EntityEffectParticleEffect.create(ParticleTypes.ENTITY_EFFECT, argb);
         world.spawnParticles(particleEffect, player.getX(), player.getY() + 1, player.getZ(), 2, 0.3, 0.5, 0.3, 0.1);

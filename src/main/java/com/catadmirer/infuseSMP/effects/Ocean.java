@@ -1,8 +1,11 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -10,39 +13,54 @@ import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
 
-public class Ocean {
+public class Ocean extends InfuseEffect {
+    private final Infuse plugin;
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.OCEAN)) return;
+    public Ocean() {
+        this(false);
+    }
 
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 40, 0, false, false));
-        player.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, 40, 0, false, false));
+    public Ocean(boolean augmented) {
+        super("ocean", EffectIds.OCEAN, augmented, EffectConstants.potionColor(EffectIds.OCEAN), EffectConstants.ritualColor(EffectIds.OCEAN));
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {
+        owner.addStatusEffect(new StatusEffectInstance(StatusEffects.WATER_BREATHING, 40, 0, false, false));
+        owner.addStatusEffect(new StatusEffectInstance(StatusEffects.DOLPHINS_GRACE, 40, 0, false, false));
         
-        int drownStrength = 5;
-        if (CooldownManager.isEffectActive(player.getUuid(), "ocean")) {
-            drownStrength = 20;
+        int drownStrength = plugin.getMainConfig().oceanPassiveDrownStrength();
+        int drownDamage = plugin.getMainConfig().oceanPassiveDrownDamage();
+        if (CooldownManager.isEffectActive(owner.getUuid(), "ocean")) {
+            drownStrength = plugin.getMainConfig().oceanSparkDrownStrength();
+            drownDamage = plugin.getMainConfig().oceanSparkDrownDamage();
         }
 
-        for (ServerPlayerEntity nearby : player.getServerWorld().getPlayers()) {
-            if (nearby == player) continue;
-            if (plugin.getDataManager().isTrusted(nearby.getUuid(), player.getUuid())) continue;
-            if (nearby.getPos().distanceTo(player.getPos()) <= 5) {
+        for (ServerPlayerEntity nearby : owner.getServerWorld().getPlayers()) {
+            if (nearby == owner) continue;
+            if (plugin.getDataManager().isTrusted(nearby.getUuid(), owner.getUuid())) continue;
+            if (nearby.getPos().distanceTo(owner.getPos()) <= 5) {
                 nearby.setAir(Math.max(-20, nearby.getAir() - drownStrength));
                 if (nearby.getAir() <= 0) {
-                    nearby.damage(player.getServerWorld(), player.getServerWorld().getDamageSources().drown(), CooldownManager.isEffectActive(player.getUuid(), "ocean") ? 2.0f : 1.0f);
+                    nearby.damage(owner.getServerWorld(), owner.getServerWorld().getDamageSources().drown(), (float) drownDamage);
                 }
             }
         }
 
-        if (CooldownManager.isEffectActive(player.getUuid(), "ocean")) {
-            applyPullEffect(player);
-            spawnSparkParticles(player);
+        if (CooldownManager.isEffectActive(owner.getUuid(), "ocean")) {
+            applyPullEffect(owner);
+            spawnSparkParticles(owner);
         }
     }
 
-    private static void applyPullEffect(ServerPlayerEntity caster) {
-        Infuse plugin = Infuse.getInstance();
+    private void applyPullEffect(ServerPlayerEntity caster) {
         double radius = plugin.getMainConfig().oceanPullRadius();
         double strength = plugin.getMainConfig().oceanPullStrength();
 
@@ -57,7 +75,7 @@ public class Ocean {
         }
     }
 
-    private static void spawnSparkParticles(ServerPlayerEntity player) {
+    private void spawnSparkParticles(ServerPlayerEntity player) {
         double radius = 5;
         net.minecraft.server.world.ServerWorld world = player.getServerWorld();
         for (int angle = 0; angle < 360; angle += 20) {
@@ -67,17 +85,37 @@ public class Ocean {
             world.spawnParticles(net.minecraft.particle.ParticleTypes.FALLING_WATER, x, player.getY() + 1, z, 1, 0, 0, 0, 0);
         }
     }
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
 
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
         if (CooldownManager.isOnCooldown(playerUUID, "ocean")) return;
 
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
 
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_OCEAN : EffectMapping.OCEAN);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_OCEAN : EffectMapping.OCEAN);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
         CooldownManager.setTimes(playerUUID, "ocean", duration, cooldown);
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Ocean();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Ocean(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_OCEAN_NAME : MessageType.OCEAN_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_OCEAN_LORE : MessageType.OCEAN_LORE);
     }
 }

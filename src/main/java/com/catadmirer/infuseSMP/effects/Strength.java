@@ -1,36 +1,74 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
 import java.util.UUID;
 
-public class Strength {
+public class Strength extends InfuseEffect {
+    private final Infuse plugin;
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        // Strength passive
+    public Strength() {
+        this(false);
     }
 
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
+    public Strength(boolean augmented) {
+        super("strength", EffectIds.STRENGTH, augmented, EffectConstants.potionColor(EffectIds.STRENGTH), EffectConstants.ritualColor(EffectIds.STRENGTH));
+        this.plugin = Infuse.getInstance();
+    }
 
+    @Override
+    public void equip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {}
+
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
         if (CooldownManager.isOnCooldown(playerUUID, "strength")) return;
 
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
         
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_STRENGTH : EffectMapping.STRENGTH);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_STRENGTH : EffectMapping.STRENGTH);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
         CooldownManager.setTimes(playerUUID, "strength", duration, cooldown);
     }
 
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Strength();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Strength(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_STRENGTH_NAME : MessageType.STRENGTH_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_STRENGTH_LORE : MessageType.STRENGTH_LORE);
+    }
+
     public static float getExtraDamage(ServerPlayerEntity attacker, float damage) {
         Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(attacker, EffectMapping.STRENGTH)) return damage;
+        InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
+        if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return damage;
 
         float health = attacker.getHealth();
         if (health < 2f) {
@@ -50,7 +88,6 @@ public class Strength {
     public static float applySparkAutoCrit(ServerPlayerEntity player, float damage) {
         if (shouldAutoCrit(player)) {
             damage *= 1.35f;
-            // Spawn crit particles and play sound? (Logic would go in the damage mixin/event)
         }
         return damage;
     }

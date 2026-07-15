@@ -1,8 +1,11 @@
 package com.catadmirer.infuseSMP.effects;
 
+import com.catadmirer.infuseSMP.EffectConstants;
+import com.catadmirer.infuseSMP.EffectIds;
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.Message;
+import com.catadmirer.infuseSMP.Message.MessageType;
 import com.catadmirer.infuseSMP.managers.CooldownManager;
-import com.catadmirer.infuseSMP.managers.EffectMapping;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.effect.StatusEffectInstance;
 import net.minecraft.entity.effect.StatusEffects;
@@ -16,38 +19,51 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
 
-public class Ender {
-    public static final Set<UUID> cursedPlayers = new HashSet<>();
+public class Ender extends InfuseEffect {
+    private final Infuse plugin;
 
-    public static void applyPassiveEffects(ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        if (!plugin.getDataManager().hasEffect(player, EffectMapping.ENDER)) return;
+    public Ender() {
+        this(false);
+    }
 
-        ServerWorld world = (ServerWorld) player.getWorld();
-        for (Entity entity : world.getOtherEntities(player, player.getBoundingBox().expand(10))) {
+    public Ender(boolean augmented) {
+        super("ender", EffectIds.ENDER, augmented, EffectConstants.potionColor(EffectIds.ENDER), EffectConstants.ritualColor(EffectIds.ENDER));
+        this.plugin = Infuse.getInstance();
+    }
+
+    @Override
+    public void equip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void unequip(ServerPlayerEntity owner) {}
+
+    @Override
+    public void applyPassives(ServerPlayerEntity owner) {
+        ServerWorld world = owner.getServerWorld();
+        double radius = plugin.getMainConfig().enderPassiveRadius();
+        for (Entity entity : world.getOtherEntities(owner, owner.getBoundingBox().expand(radius))) {
             if (entity instanceof ServerPlayerEntity nearby) {
-                if (plugin.getDataManager().isTrusted(nearby.getUuid(), player.getUuid())) continue;
+                if (plugin.getDataManager().isTrusted(nearby.getUuid(), owner.getUuid())) continue;
                 nearby.addStatusEffect(new StatusEffectInstance(StatusEffects.GLOWING, 40, 1, false, false));
             }
         }
     }
 
-    public static void activateSpark(boolean isAugmented, ServerPlayerEntity player) {
-        Infuse plugin = Infuse.getInstance();
-        UUID playerUUID = player.getUuid();
-
+    @Override
+    public void activateSpark(ServerPlayerEntity owner) {
+        UUID playerUUID = owner.getUuid();
         if (CooldownManager.isOnCooldown(playerUUID, "ender")) return;
 
-        player.getWorld().playSound(null, player.getX(), player.getY(), player.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
+        owner.getWorld().playSound(null, owner.getX(), owner.getY(), owner.getZ(), SoundEvents.BLOCK_BEACON_POWER_SELECT, SoundCategory.PLAYERS, 1, 1);
 
-        Vec3d startPos = player.getEyePos();
-        Vec3d direction = player.getRotationVector().normalize();
-        int maxDistance = 15;
+        Vec3d startPos = owner.getEyePos();
+        Vec3d direction = owner.getRotationVector().normalize();
+        int maxDistance = plugin.getMainConfig().enderSparkMaxDistance();
 
         Vec3d targetPos = null;
         for (int i = 1; i <= maxDistance; i++) {
             Vec3d checkPos = startPos.add(direction.multiply(i));
-            if (isSafeTeleportLocation(player.getServerWorld(), checkPos)) {
+            if (isSafeTeleportLocation(owner.getServerWorld(), checkPos)) {
                 targetPos = checkPos;
             } else {
                 break;
@@ -55,11 +71,11 @@ public class Ender {
         }
 
         if (targetPos != null) {
-            player.requestTeleport(targetPos.x, targetPos.y, targetPos.z);
+            owner.requestTeleport(targetPos.x, targetPos.y, targetPos.z);
         }
 
-        long cooldown = plugin.getMainConfig().cooldown(isAugmented ? EffectMapping.AUG_ENDER : EffectMapping.ENDER);
-        long duration = plugin.getMainConfig().duration(isAugmented ? EffectMapping.AUG_ENDER : EffectMapping.ENDER);
+        long cooldown = plugin.getMainConfig().cooldown(this);
+        long duration = plugin.getMainConfig().duration(this);
 
         CooldownManager.setTimes(playerUUID, "ender", duration, cooldown);
     }
@@ -67,5 +83,25 @@ public class Ender {
     private static boolean isSafeTeleportLocation(ServerWorld world, Vec3d pos) {
         BlockPos blockPos = BlockPos.ofFloored(pos);
         return world.getBlockState(blockPos).isAir() && world.getBlockState(blockPos.up()).isAir();
+    }
+
+    @Override
+    public InfuseEffect getRegularVersion() {
+        return new Ender();
+    }
+
+    @Override
+    public InfuseEffect getAugmentedVersion() {
+        return new Ender(true);
+    }
+
+    @Override
+    public Message getName() {
+        return new Message(augmented ? MessageType.AUG_ENDER_NAME : MessageType.ENDER_NAME);
+    }
+
+    @Override
+    public Message getLore() {
+        return new Message(augmented ? MessageType.AUG_ENDER_LORE : MessageType.ENDER_LORE);
     }
 }
