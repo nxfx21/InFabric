@@ -1,6 +1,7 @@
 package com.catadmirer.infuseSMP.mixin;
 
 import com.catadmirer.infuseSMP.Infuse;
+import com.catadmirer.infuseSMP.effects.Fire;
 import com.catadmirer.infuseSMP.effects.InfuseEffect;
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
@@ -33,10 +34,7 @@ public abstract class PersistentProjectileEntityMixin extends ProjectileEntity {
                 invokeSetPierceLevel((byte) 100);
             }
 
-            InfuseEffect fireEffect = InfuseEffect.fromString("fire");
-            if (fireEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), fireEffect)) {
-                ((PersistentProjectileEntity) (Object) this).setOnFireFor(100);
-            }
+            Fire.onEntityShootBow(player, (PersistentProjectileEntity) (Object) this);
         }
     }
 }

@@ -67,6 +67,10 @@ public class CooldownManager {
         return 0;
     }
 
+    public static long getRemainingCooldownSeconds(UUID playerUUID, String key) {
+        return getCooldownTimeLeft(playerUUID, key) / 1000;
+    }
+
     public static void clearSpecificCooldown(UUID playerUUID, String key) {
         Map<String, Long> playerCooldowns = cooldowns.get(playerUUID);
         if (playerCooldowns != null) {

@@ -27,6 +27,12 @@ public class GlobalLoop {
     private void onTick(MinecraftServer server) {
         Infuse.getInstance().getHitTracker().tick();
         ticks++;
+
+        for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
+            com.catadmirer.infuseSMP.effects.Fire.onMove(player);
+            com.catadmirer.infuseSMP.effects.Frost.onMove(player);
+        }
+
         if (ticks % 20 != 0) return; // Run every 20 ticks (1 second)
 
         for (ServerPlayerEntity player : server.getPlayerManager().getPlayerList()) {
@@ -47,16 +53,22 @@ public class GlobalLoop {
             com.catadmirer.infuseSMP.effects.InfuseEffect apophisEffect = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString("apophis");
             if (apophisEffect == null || !Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), apophisEffect)) {
                 EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
-                if (playerHealth != null) {
+                if (playerHealth != null && playerHealth.getModifier(com.catadmirer.infuseSMP.effects.Apophis.APOPHIS_BOOST_ID) != null) {
                     playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Apophis.APOPHIS_BOOST_ID);
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
                 }
             }
 
             com.catadmirer.infuseSMP.effects.InfuseEffect heartEffect = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString("heart");
             if (heartEffect == null || !Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), heartEffect)) {
                 EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
-                if (playerHealth != null) {
+                if (playerHealth != null && playerHealth.getModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_BOOST_ID) != null) {
                     playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_BOOST_ID);
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
                 }
             }
 
@@ -87,8 +99,21 @@ public class GlobalLoop {
 
             if (!com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "heart")) {
                 EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
-                if (playerHealth != null) {
+                if (playerHealth != null && playerHealth.getModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_SPARK_BOOST_ID) != null) {
                     playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Heart.HEART_SPARK_BOOST_ID);
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
+                }
+            }
+
+            if (!com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "apophis")) {
+                EntityAttributeInstance playerHealth = player.getAttributeInstance(EntityAttributes.MAX_HEALTH);
+                if (playerHealth != null && playerHealth.getModifier(com.catadmirer.infuseSMP.effects.Apophis.APOPHIS_SPARK_BOOST_ID) != null) {
+                    playerHealth.removeModifier(com.catadmirer.infuseSMP.effects.Apophis.APOPHIS_SPARK_BOOST_ID);
+                    if (player.getHealth() > player.getMaxHealth()) {
+                        player.setHealth(player.getMaxHealth());
+                    }
                 }
             }
 

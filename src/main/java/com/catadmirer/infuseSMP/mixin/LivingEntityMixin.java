@@ -5,6 +5,7 @@ import com.catadmirer.infuseSMP.effects.Strength;
 
 import net.minecraft.entity.Entity;
 import net.minecraft.entity.EntityType;
+import net.minecraft.entity.ItemEntity;
 import net.minecraft.entity.LivingEntity;
 import net.minecraft.entity.damage.DamageSource;
 import net.minecraft.entity.player.PlayerEntity;
@@ -12,7 +13,9 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.world.World;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(LivingEntity.class)
 public abstract class LivingEntityMixin extends Entity {
@@ -27,18 +30,15 @@ public abstract class LivingEntityMixin extends Entity {
             com.catadmirer.infuseSMP.effects.InfuseEffect strengthEffect = com.catadmirer.infuseSMP.effects.InfuseEffect.fromString("strength");
             
             // Strength Effect Logic
-            if (strengthEffect != null && plugin.getDataManager().hasEffect(attacker, strengthEffect)) {
-                // Double damage to mobs (not players)
-                if (!((Object) this instanceof PlayerEntity)) {
-                    amount *= 2.0f;
-                }
-                
-                // Adrenaline bonus
+            if (strengthEffect != null && plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) {
                 amount = Strength.getExtraDamage(attacker, amount);
-                
-                // Auto-crit spark
                 amount = Strength.applySparkAutoCrit(attacker, amount);
+                amount = Strength.modifyAttackDamage(attacker, (LivingEntity) (Object) this, amount);
             }
+
+            com.catadmirer.infuseSMP.effects.Emerald.onAttack(attacker, (LivingEntity) (Object) this);
+            com.catadmirer.infuseSMP.effects.Ender.onAttack(attacker, (LivingEntity) (Object) this);
+            com.catadmirer.infuseSMP.effects.Thief.onAttack(attacker, (LivingEntity) (Object) this);
         }
 
         if (source.getSource() instanceof net.minecraft.entity.projectile.PersistentProjectileEntity projectile) {
@@ -56,10 +56,28 @@ public abstract class LivingEntityMixin extends Entity {
         return amount;
     }
 
-    @org.spongepowered.asm.mixin.injection.Inject(method = "finishUsing", at = @At("HEAD"))
-    private void onFinishUsing(World world, net.minecraft.item.ItemStack stack, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<net.minecraft.item.ItemStack> cir) {
+    @org.spongepowered.asm.mixin.injection.Inject(method = "damage", at = @At("HEAD"), cancellable = true)
+    private void onDamageHead(DamageSource source, float amount, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerPlayerEntity player) {
+            com.catadmirer.infuseSMP.effects.Feather.onFallDamage(player, source, amount, cir);
+        }
+    }
+
+    @Inject(method = "sendPickup", at = @At("HEAD"))
+    private void onSendPickup(Entity entity, int count, CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayerEntity player) {
+            if (entity instanceof ItemEntity itemEntity) {
+                Infuse.getInstance().getDropManager().onPickup(itemEntity, player);
+            }
+        }
+    }
+
+    @Inject(method = "consumeItem", at = @At("HEAD"))
+    private void onConsumeItem(CallbackInfo ci) {
+        if ((Object) this instanceof ServerPlayerEntity player) {
+            net.minecraft.item.ItemStack stack = ((LivingEntity) (Object) this).getActiveItem();
             Infuse.getInstance().getEffectManager().onDrinkEffect(player, stack);
+            com.catadmirer.infuseSMP.effects.Emerald.onConsume(player, stack);
         }
     }
 }

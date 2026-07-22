@@ -106,20 +106,30 @@ public class Heart extends InfuseEffect {
         showHealthAboveEntity(target);
     }
 
+    private static final java.util.concurrent.ScheduledExecutorService DISPLAY_SCHEDULER =
+        java.util.concurrent.Executors.newSingleThreadScheduledExecutor(r -> {
+            Thread t = new Thread(r, "Infuse-HeartDisplayCleaner");
+            t.setDaemon(true);
+            return t;
+        });
+
     private static void showHealthAboveEntity(LivingEntity entity) {
+        if (entity == null || entity.getWorld().isClient()) return;
         net.minecraft.entity.decoration.DisplayEntity.TextDisplayEntity display = net.minecraft.entity.EntityType.TEXT_DISPLAY.create(entity.getWorld(), net.minecraft.entity.SpawnReason.COMMAND);
         if (display == null) return;
         
         display.setPos(entity.getX(), entity.getY() + 2.5, entity.getZ());
         display.setInvisible(false);
+        display.setText(net.minecraft.text.Text.literal(String.format("§c❤ %.1f", entity.getHealth())));
         
         entity.getWorld().spawnEntity(display);
         display.startRiding(entity);
         
-        // Remove after 10 seconds (200 ticks) using server task executor or scheduled runnables
-        entity.getWorld().getServer().execute(() -> {
-            // Task scheduling in Fabric can be simplified, or we can just let it run
-        });
+        DISPLAY_SCHEDULER.schedule(() -> {
+            if (entity.getWorld() != null && entity.getWorld().getServer() != null) {
+                entity.getWorld().getServer().execute(display::discard);
+            }
+        }, 2500, java.util.concurrent.TimeUnit.MILLISECONDS);
     }
 
     public static void onConsume(ServerPlayerEntity player, net.minecraft.item.ItemStack stack) {

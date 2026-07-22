@@ -30,6 +30,11 @@ dependencies {
     
     // SnakeYAML for parsing the old config files
     implementation include("org.yaml:snakeyaml:2.3")
+
+    testImplementation 'org.junit.jupiter:junit-jupiter-api:5.10.2'
+    testImplementation 'org.mockito:mockito-core:5.11.0'
+    testRuntimeOnly 'org.junit.jupiter:junit-jupiter-engine:5.10.2'
+    testRuntimeOnly 'org.junit.platform:junit-platform-launcher:1.10.2'
 }
 
 processResources {
@@ -47,6 +52,13 @@ java {
 	withSourcesJar()
 	sourceCompatibility = JavaVersion.VERSION_21
 	targetCompatibility = JavaVersion.VERSION_21
+}
+
+test {
+	useJUnitPlatform()
+	systemProperty 'net.bytebuddy.experimental', 'true'
+	jvmArgs '-XX:+EnableDynamicAgentLoading'
+	forkEvery = 5
 }
 
 task resetAndRun {

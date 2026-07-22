@@ -82,4 +82,66 @@ public class Thief extends InfuseEffect {
     public Message getLore() {
         return new Message(augmented ? MessageType.AUG_THIEF_LORE : MessageType.THIEF_LORE);
     }
+
+    public static void onPlayerHit(ServerPlayerEntity attacker, ServerPlayerEntity victim) {
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect thiefEffect = InfuseEffect.fromString("thief");
+        if (thiefEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), thiefEffect)) return;
+
+        if (plugin.getDataManager().isTrusted(victim.getUuid(), attacker.getUuid())) return;
+
+        // Hotbar item stealing (slots 0-8)
+        java.util.List<Integer> validSlots = new java.util.ArrayList<>();
+        for (int i = 0; i < 9; i++) {
+            if (!victim.getInventory().getStack(i).isEmpty()) {
+                validSlots.add(i);
+            }
+        }
+        if (!validSlots.isEmpty()) {
+            int chosenSlot = validSlots.get(net.minecraft.util.math.random.Random.create().nextInt(validSlots.size()));
+            net.minecraft.item.ItemStack stolenStack = victim.getInventory().getStack(chosenSlot);
+            victim.getInventory().setStack(chosenSlot, net.minecraft.item.ItemStack.EMPTY);
+            if (!attacker.getInventory().insertStack(stolenStack)) {
+                attacker.dropItem(stolenStack, false);
+            }
+        }
+
+        // Effect stealing when Thief spark is active
+        if (CooldownManager.isEffectActive(attacker.getUuid(), "thief")) {
+            InfuseEffect effect1 = plugin.getDataManager().getEffect(victim.getUuid(), "1");
+            InfuseEffect effect2 = plugin.getDataManager().getEffect(victim.getUuid(), "2");
+
+            InfuseEffect stolen = null;
+            String slotStolenFrom = null;
+            if (effect1 != null && effect2 != null) {
+                if (Math.random() > 0.5) {
+                    stolen = effect1;
+                    slotStolenFrom = "1";
+                } else {
+                    stolen = effect2;
+                    slotStolenFrom = "2";
+                }
+            } else if (effect1 != null) {
+                stolen = effect1;
+                slotStolenFrom = "1";
+            } else if (effect2 != null) {
+                stolen = effect2;
+                slotStolenFrom = "2";
+            }
+
+            if (stolen != null) {
+                plugin.getDataManager().removeEffect(victim.getUuid(), slotStolenFrom);
+                stolen.activateSpark(attacker);
+                attacker.sendMessage(net.minecraft.text.Text.literal("Stole and activated " + stolen.getKey() + " spark from " + victim.getName().getString() + "!"), true);
+                victim.sendMessage(net.minecraft.text.Text.literal("Your " + stolen.getKey() + " effect was stolen by " + attacker.getName().getString() + "!"), true);
+                CooldownManager.setDuration(attacker.getUuid(), "thief", 0);
+            }
+        }
+    }
+
+    public static void onAttack(ServerPlayerEntity attacker, net.minecraft.entity.LivingEntity target) {
+        if (target instanceof ServerPlayerEntity victim) {
+            onPlayerHit(attacker, victim);
+        }
+    }
 }

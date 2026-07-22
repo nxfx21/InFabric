@@ -30,6 +30,7 @@ public class InfuseCommandManager {
             registerDrainCommand(dispatcher);
             registerSwapEffectsCommand(dispatcher);
             registerTrustCommand(dispatcher);
+            registerUninfuseCommand(dispatcher);
         });
     }
 
@@ -95,9 +96,52 @@ public class InfuseCommandManager {
     private void registerAbilitiesCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("abilities")
             .executes(context -> {
-                context.getSource().sendMessage(Text.literal("Abilities command (stub)"));
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                    return 0;
+                }
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                com.catadmirer.infuseSMP.effects.InfuseEffect effect1 = plugin.getDataManager().getEffect(player.getUuid(), "1");
+                com.catadmirer.infuseSMP.effects.InfuseEffect effect2 = plugin.getDataManager().getEffect(player.getUuid(), "2");
+
+                context.getSource().sendMessage(Text.literal("=== Your Infuse Effects & Abilities ==="));
+                if (effect1 != null) {
+                    long cd1 = CooldownManager.getCooldownTimeLeft(player.getUuid(), effect1.getKey()) / 1000L;
+                    context.getSource().sendMessage(Text.literal("Slot 1: " + effect1.getKey() + (cd1 > 0 ? " (Cooldown: " + cd1 + "s)" : " (Ready)")));
+                } else {
+                    context.getSource().sendMessage(Text.literal("Slot 1: None"));
+                }
+
+                if (effect2 != null) {
+                    long cd2 = CooldownManager.getCooldownTimeLeft(player.getUuid(), effect2.getKey()) / 1000L;
+                    context.getSource().sendMessage(Text.literal("Slot 2: " + effect2.getKey() + (cd2 > 0 ? " (Cooldown: " + cd2 + "s)" : " (Ready)")));
+                } else {
+                    context.getSource().sendMessage(Text.literal("Slot 2: None"));
+                }
                 return 1;
             })
+            .then(argument("slot", StringArgumentType.word())
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity player = context.getSource().getPlayer();
+                    String slot = StringArgumentType.getString(context, "slot");
+                    if (!slot.equals("1") && !slot.equals("2")) {
+                        player.sendMessage(Text.literal("Invalid slot. Use 1 or 2."));
+                        return 0;
+                    }
+                    com.catadmirer.infuseSMP.effects.InfuseEffect effect = plugin.getDataManager().getEffect(player.getUuid(), slot);
+                    if (effect != null) {
+                        effect.activateSpark(player);
+                        return 1;
+                    } else {
+                        player.sendMessage(Text.literal("No effect equipped in slot " + slot));
+                        return 0;
+                    }
+                })
+            )
         );
     }
 
@@ -127,16 +171,57 @@ public class InfuseCommandManager {
     private void registerDrainCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("drain")
             .executes(context -> {
-                context.getSource().sendMessage(Text.literal("Drain command (stub)"));
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                    return 0;
+                }
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                boolean drained1 = plugin.getEffectManager().drainEffect(player, "1").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                boolean drained2 = plugin.getEffectManager().drainEffect(player, "2").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                if (!drained1 && !drained2) {
+                    player.sendMessage(Text.literal("You have no equipped effects to drain."));
+                }
                 return 1;
             })
+            .then(argument("slot", StringArgumentType.word())
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity player = context.getSource().getPlayer();
+                    String slot = StringArgumentType.getString(context, "slot");
+                    if (!slot.equals("1") && !slot.equals("2")) {
+                        player.sendMessage(Text.literal("Invalid slot. Use 1 or 2."));
+                        return 0;
+                    }
+                    plugin.getEffectManager().drainEffect(player, slot);
+                    return 1;
+                })
+            )
         );
     }
 
     private void registerSwapEffectsCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("swapeffects")
             .executes(context -> {
-                context.getSource().sendMessage(Text.literal("Swapped effects (stub)"));
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                    return 0;
+                }
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                com.catadmirer.infuseSMP.effects.InfuseEffect effect1 = plugin.getDataManager().getEffect(player.getUuid(), "1");
+                com.catadmirer.infuseSMP.effects.InfuseEffect effect2 = plugin.getDataManager().getEffect(player.getUuid(), "2");
+
+                if (effect1 == null && effect2 == null) {
+                    player.sendMessage(Text.literal("You have no equipped effects to swap."));
+                    return 0;
+                }
+
+                plugin.getDataManager().setEffect(player.getUuid(), "1", effect2);
+                plugin.getDataManager().setEffect(player.getUuid(), "2", effect1);
+
+                player.sendMessage(Text.literal("Swapped your equipped effects."));
                 return 1;
             })
         );
@@ -152,6 +237,67 @@ public class InfuseCommandManager {
                     context.getSource().sendMessage(Text.literal("Trusted " + target.getName().getString()));
                     return 1;
                 })
+            )
+        );
+    }
+
+    private void registerUninfuseCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(literal("uninfuse")
+            .executes(context -> {
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                    return 0;
+                }
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                boolean drained1 = plugin.getEffectManager().drainEffect(player, "1").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                boolean drained2 = plugin.getEffectManager().drainEffect(player, "2").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                if (!drained1 && !drained2) {
+                    player.sendMessage(Text.literal("You have no equipped effects to uninfuse."));
+                }
+                return 1;
+            })
+            .then(argument("slot", StringArgumentType.word())
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("This command must be executed by a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity player = context.getSource().getPlayer();
+                    String slot = StringArgumentType.getString(context, "slot");
+                    if (!slot.equals("1") && !slot.equals("2")) {
+                        player.sendMessage(Text.literal("Invalid slot. Use 1 or 2."));
+                        return 0;
+                    }
+                    plugin.getEffectManager().drainEffect(player, slot);
+                    return 1;
+                })
+            )
+            .then(argument("target", EntityArgumentType.player())
+                .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                    boolean drained1 = plugin.getEffectManager().drainEffect(target, "1").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                    boolean drained2 = plugin.getEffectManager().drainEffect(target, "2").type() == com.catadmirer.infuseSMP.managers.EffectManager.EquipResultType.SUCCESS;
+                    if (!drained1 && !drained2) {
+                        context.getSource().sendMessage(Text.literal("Target has no equipped effects to uninfuse."));
+                    } else {
+                        context.getSource().sendMessage(Text.literal("Uninfused " + target.getName().getString() + "'s effects."));
+                    }
+                    return 1;
+                })
+                .then(argument("slot", StringArgumentType.word())
+                    .executes(context -> {
+                        ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                        String slot = StringArgumentType.getString(context, "slot");
+                        if (!slot.equals("1") && !slot.equals("2")) {
+                            context.getSource().sendMessage(Text.literal("Invalid slot. Use 1 or 2."));
+                            return 0;
+                        }
+                        plugin.getEffectManager().drainEffect(target, slot);
+                        context.getSource().sendMessage(Text.literal("Uninfused slot " + slot + " for " + target.getName().getString() + "."));
+                        return 1;
+                    })
+                )
             )
         );
     }

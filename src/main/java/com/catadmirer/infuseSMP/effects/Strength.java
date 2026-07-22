@@ -82,13 +82,43 @@ public class Strength extends InfuseEffect {
     }
 
     public static boolean shouldAutoCrit(ServerPlayerEntity player) {
-        return CooldownManager.isEffectActive(player.getUuid(), "strength");
+        return player != null && shouldAutoCrit(player.getUuid());
+    }
+
+    public static boolean shouldAutoCrit(UUID uuid) {
+        return CooldownManager.isEffectActive(uuid, "strength");
     }
 
     public static float applySparkAutoCrit(ServerPlayerEntity player, float damage) {
-        if (shouldAutoCrit(player)) {
+        return player != null ? applySparkAutoCrit(player.getUuid(), damage) : damage;
+    }
+
+    public static float applySparkAutoCrit(UUID uuid, float damage) {
+        if (shouldAutoCrit(uuid)) {
             damage *= 1.35f;
         }
+        return damage;
+    }
+
+    public static float modifyAttackDamage(ServerPlayerEntity attacker, net.minecraft.entity.LivingEntity target, float damage) {
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
+        if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return damage;
+
+        if (!(target instanceof ServerPlayerEntity)) {
+            if (plugin.getMainConfig().strengthDoubleDamage()) {
+                damage *= 2.0f;
+            }
+        }
+
+        if (target instanceof ServerPlayerEntity playerTarget && playerTarget.isBlocking()) {
+            if (plugin.getMainConfig().strengthLengthenShieldCooldown() 
+                    && com.catadmirer.infuseSMP.util.ItemUtil.isAxe(attacker.getMainHandStack()) 
+                    && attacker.fallDistance > 0.0F) {
+                playerTarget.getItemCooldownManager().set(net.minecraft.item.Items.SHIELD.getDefaultStack(), 200);
+            }
+        }
+
         return damage;
     }
 }

@@ -19,9 +19,12 @@ public class PlayerEntityMixin {
     @Inject(method = "canConsume", at = @At("HEAD"), cancellable = true)
     private void onCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        InfuseEffect regenEffect = InfuseEffect.fromString("regen");
-        if (regenEffect != null && Infuse.getInstance().getDataManager().hasEffect(player.getUuid(), regenEffect)) {
-            cir.setReturnValue(true);
+        Infuse plugin = Infuse.getInstance();
+        if (plugin != null && plugin.getDataManager() != null && plugin.getMainConfig() != null && plugin.getMainConfig().regenCanAlwaysEat()) {
+            InfuseEffect regenEffect = InfuseEffect.fromString("regen");
+            if (regenEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), regenEffect)) {
+                cir.setReturnValue(true);
+            }
         }
     }
 
@@ -35,7 +38,7 @@ public class PlayerEntityMixin {
         Infuse plugin = Infuse.getInstance();
         InfuseEffect emeraldEffect = InfuseEffect.fromString("emerald");
         
-        if (emeraldEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), emeraldEffect)) {
+        if (experience > 0 && emeraldEffect != null && plugin.getDataManager().hasEffect(player.getUuid(), emeraldEffect)) {
             double multiplier = plugin.getMainConfig().emeraldMultiplierStandard();
             if (com.catadmirer.infuseSMP.managers.CooldownManager.isEffectActive(player.getUuid(), "emerald")) {
                 multiplier = plugin.getMainConfig().emeraldMultiplierUseEffect();
@@ -53,12 +56,4 @@ public class PlayerEntityMixin {
         }
     }
 
-    @Inject(method = "sendPickup", at = @At("HEAD"))
-    private void onSendPickup(Entity entity, int count, CallbackInfo ci) {
-        if ((Object) this instanceof ServerPlayerEntity player) {
-            if (entity instanceof ItemEntity itemEntity) {
-                Infuse.getInstance().getDropManager().onPickup(itemEntity, player);
-            }
-        }
-    }
 }

@@ -44,7 +44,7 @@ public class Frost extends InfuseEffect {
 
     @Override
     public void applyPassives(ServerPlayerEntity owner) {
-        if (owner.getWorld().getBlockState(owner.getBlockPos().down()).isOf(net.minecraft.block.Blocks.ICE)) {
+        if (owner.getWorld().getBlockState(owner.getBlockPos().down()).isIn(net.minecraft.registry.tag.BlockTags.ICE)) {
             owner.addStatusEffect(new StatusEffectInstance(StatusEffects.SPEED, 30, 2, false, false));
         }
 
@@ -153,5 +153,66 @@ public class Frost extends InfuseEffect {
         if (frostEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), frostEffect)) return;
 
         target.setFrozenTicks(200);
+    }
+
+    public static void onMove(ServerPlayerEntity player) {
+        if (player == null) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect frostEffect = InfuseEffect.fromString("frost");
+        if (frostEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), frostEffect)) return;
+
+        net.minecraft.world.World world = player.getWorld();
+        BlockPos center = player.getBlockPos().down();
+        int radius = 2;
+
+        for (int dx = -radius; dx <= radius; dx++) {
+            for (int dz = -radius; dz <= radius; dz++) {
+                if (dx * dx + dz * dz > radius * radius + 1) continue;
+                BlockPos pos = center.add(dx, 0, dz);
+                net.minecraft.block.BlockState state = world.getBlockState(pos);
+                if (state.isOf(Blocks.WATER) || world.getFluidState(pos).isOf(net.minecraft.fluid.Fluids.WATER)) {
+                    net.minecraft.block.BlockState stateAbove = world.getBlockState(pos.up());
+                    if (stateAbove.isAir() || stateAbove.isOf(Blocks.WATER) || !stateAbove.isOpaqueFullCube()) {
+                        world.setBlockState(pos, Blocks.FROSTED_ICE.getDefaultState());
+                    }
+                }
+            }
+        }
+
+        changeToSnow(player);
+    }
+
+    public static void onWindChargeHit(ServerPlayerEntity player, net.minecraft.entity.Entity entity) {
+        if (player == null || entity == null) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect frostEffect = InfuseEffect.fromString("frost");
+        if (frostEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), frostEffect)) return;
+        if (entity instanceof LivingEntity living) {
+            if (entity instanceof ServerPlayerEntity target && plugin.getDataManager().isTrusted(target.getUuid(), player.getUuid())) return;
+            living.setFrozenTicks(200);
+            living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 1, false, false));
+        }
+    }
+
+    public static void onWindChargeExplode(ServerPlayerEntity player, net.minecraft.util.math.Vec3d pos, double radius) {
+        if (player == null || pos == null) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect frostEffect = InfuseEffect.fromString("frost");
+        if (frostEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), frostEffect)) return;
+        if (player.getWorld() instanceof net.minecraft.server.world.ServerWorld serverWorld) {
+            serverWorld.spawnParticles(net.minecraft.particle.ParticleTypes.SNOWFLAKE, pos.x, pos.y, pos.z, 20, radius / 2.0, radius / 2.0, radius / 2.0, 0.05);
+
+            net.minecraft.util.math.Box box = new net.minecraft.util.math.Box(
+                pos.x - radius, pos.y - radius, pos.z - radius,
+                pos.x + radius, pos.y + radius, pos.z + radius
+            );
+            for (net.minecraft.entity.Entity entity : serverWorld.getOtherEntities(player, box)) {
+                if (entity instanceof LivingEntity living) {
+                    if (entity instanceof ServerPlayerEntity target && plugin.getDataManager().isTrusted(target.getUuid(), player.getUuid())) continue;
+                    living.setFrozenTicks(200);
+                    living.addStatusEffect(new StatusEffectInstance(StatusEffects.SLOWNESS, 100, 1, false, false));
+                }
+            }
+        }
     }
 }

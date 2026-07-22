@@ -59,6 +59,11 @@ public class MainConfig {
         return def;
     }
 
+    private boolean getBooleanOption(String camelPath, String snakePath, boolean def) {
+        if (config.has(camelPath)) return config.get(camelPath).getAsBoolean();
+        return getBoolean(snakePath, def);
+    }
+
     private int getInt(String path, int def) {
         if (config.has(path)) return config.get(path).getAsInt();
         config.addProperty(path, def);
@@ -112,7 +117,11 @@ public class MainConfig {
     public int oceanSparkDrownStrength() { return getInt("ocean_spark_drown_strength", 20); }
     public int oceanSparkDrownDamage() { return getInt("ocean_spark_drown_damage", 2); }
     public int hitCounterDecaySeconds() { return getInt("hit_counter_decay_seconds", 15); }
-    public int emeraldExpPerHit() { return getInt("emerald_xp_stolen_per_hit", 15); }
+    public int emeraldExpPerHit() {
+        if (config.has("emeraldExpPerHit")) return config.get("emeraldExpPerHit").getAsInt();
+        if (config.has("emerald_exp_per_hit")) return config.get("emerald_exp_per_hit").getAsInt();
+        return getInt("emerald_xp_stolen_per_hit", 15);
+    }
     public float emeraldExpPercent() { return (float) getDouble("emerald_xp_stolen_percent", 1.0); }
     public float emeraldPercentExpToShare() { return (float) getDouble("emerald_percent_xp_to_share", 0.5); }
 
@@ -121,6 +130,14 @@ public class MainConfig {
     public int hasteFortuneLevel() { return getInt("haste_enchantment_fortune_level", 5); }
     public int hasteEfficiencyLevel() { return getInt("haste_enchantment_efficiency_level", 10); }
     public int hasteUnbreakingLevel() { return getInt("haste_enchantment_unbreaking_level", 5); }
+
+    public boolean emeraldPreserveConsumables() { return getBooleanOption("emeraldPreserveConsumables", "emerald_preserve_consumables", true); }
+    public boolean emeraldEnchantBonus() { return getBooleanOption("emeraldEnchantBonus", "emerald_enchant_bonus", true); }
+    public boolean enderOnehitMobs() { return getBooleanOption("enderOnehitMobs", "ender_onehit_mobs", true); }
+    public boolean enderCurseHit() { return getBooleanOption("enderCurseHit", "ender_curse_hit", true); }
+    public boolean strengthLengthenShieldCooldown() { return getBooleanOption("strengthLengthenShieldCooldown", "strength_lengthen_shield_cooldown", true); }
+    public boolean strengthDoubleDamage() { return getBooleanOption("strengthDoubleDamage", "strength_double_damage", true); }
+    public boolean regenCanAlwaysEat() { return getBooleanOption("regenCanAlwaysEat", "regen_can_always_eat", true); }
 
     public long cooldown(com.catadmirer.infuseSMP.effects.InfuseEffect effect) {
         return getInt("cooldowns." + effect.getKey(), 60);

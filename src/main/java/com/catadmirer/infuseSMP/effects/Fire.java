@@ -11,6 +11,9 @@ import net.minecraft.entity.effect.StatusEffects;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.sound.SoundCategory;
 import net.minecraft.sound.SoundEvents;
+import net.minecraft.particle.ParticleTypes;
+import net.minecraft.entity.projectile.PersistentProjectileEntity;
+import net.minecraft.server.world.ServerWorld;
 import java.util.UUID;
 
 public class Fire extends InfuseEffect {
@@ -67,6 +70,28 @@ public class Fire extends InfuseEffect {
     @Override
     public Message getLore() {
         return new Message(augmented ? MessageType.AUG_FIRE_LORE : MessageType.FIRE_LORE);
+    }
+
+    public static void onMove(ServerPlayerEntity player) {
+        if (player == null) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect fireEffect = InfuseEffect.fromString("fire");
+        if (fireEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), fireEffect)) return;
+
+        if (player.isOnGround() && (player.getVelocity().horizontalLengthSquared() > 0.0001 || player.getX() != player.prevX || player.getZ() != player.prevZ)) {
+            ServerWorld world = player.getServerWorld();
+            world.spawnParticles(ParticleTypes.FLAME, player.getX(), player.getY() + 0.1, player.getZ(), 3, 0.2, 0.1, 0.2, 0.02);
+            world.spawnParticles(ParticleTypes.SMOKE, player.getX(), player.getY() + 0.1, player.getZ(), 1, 0.1, 0.1, 0.1, 0.01);
+        }
+    }
+
+    public static void onEntityShootBow(ServerPlayerEntity player, PersistentProjectileEntity arrow) {
+        if (player == null || arrow == null) return;
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect fireEffect = InfuseEffect.fromString("fire");
+        if (fireEffect == null || !plugin.getDataManager().hasEffect(player.getUuid(), fireEffect)) return;
+
+        arrow.setOnFireFor(100);
     }
 
     public static void onTenHit(ServerPlayerEntity attacker, ServerPlayerEntity target) {

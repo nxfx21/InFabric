@@ -69,6 +69,7 @@ public class Infuse implements ModInitializer {
         dropManager.registerEvents();
         effectCraftManager.registerEvents();
         PlayerDeathListener.register();
+        com.catadmirer.infuseSMP.effects.Ender.registerEvents();
 
         // Register connection events
         ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> {

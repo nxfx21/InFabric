@@ -5,6 +5,7 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "BowItemMixin",
+    "EnchantmentScreenHandlerMixin",
     "HungerManagerMixin",
     "InventoryCloseMixin",
     "LivingEntityMixin",
@@ -13,7 +14,8 @@
     "PlayerEntityMixin",
     "ServerPlayNetworkHandlerMixin",
     "ServerChunkLoadingManagerMixin",
-    "EntityTrackerMixin"
+    "EntityTrackerMixin",
+    "AbstractWindChargeEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1
