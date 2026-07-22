@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "id": "infusesmp",
+  "id": "infabric",
   "version": "${version}",
   "name": "Infuse",
   "description": "InfuseSMP Fabric Port",
@@ -13,15 +13,15 @@
     "sources": ""
   },
   "license": "All Rights Reserved",
-  "icon": "assets/infusesmp/icon.png",
+  "icon": "assets/infabric/icon.png",
   "environment": "server",
   "entrypoints": {
     "main": [
-      "com.catadmirer.infuseSMP.Infuse"
+      "com.nxfx21.infabric.Infuse"
     ]
   },
   "mixins": [
-    "infusesmp.mixins.json"
+    "infabric.mixins.json"
   ],
   "depends": {
     "fabricloader": ">=0.16.10",

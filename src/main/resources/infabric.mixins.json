@@ -1,0 +1,23 @@
+{
+  "required": true,
+  "minVersion": "0.8",
+  "package": "com.nxfx21.infabric.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "BowItemMixin",
+    "EnchantmentScreenHandlerMixin",
+    "HungerManagerMixin",
+    "InventoryCloseMixin",
+    "LivingEntityMixin",
+    "MobEntityMixin",
+    "PersistentProjectileEntityMixin",
+    "PlayerEntityMixin",
+    "ServerPlayNetworkHandlerMixin",
+    "ServerChunkLoadingManagerMixin",
+    "EntityTrackerMixin",
+    "AbstractWindChargeEntityMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

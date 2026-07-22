@@ -8,4 +8,4 @@ pluginManagement {
         gradlePluginPortal()
     }
 }
-rootProject.name = 'InfuseSMP'
+rootProject.name = 'InFabric'
