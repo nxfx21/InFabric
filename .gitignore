@@ -94,9 +94,15 @@ logs/
 *.tar.gz
 *.rar
 
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
+# hotspot virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+
+# openJ9/semeru crash logs, see https://eclipse.dev/openj9/docs/dump_javadump/
+javacore.*.txt
+core.*.dmp
+heapdump.*.phd
+Snap.*.trc
 
 # agent artifacts
 .agents/

@@ -29,10 +29,16 @@ public class Message {
 
     @Override
     public String toString() {
+        if (!placeholders.isEmpty()) {
+            throw new IllegalStateException("Not all placeholders have been registered. Missing: " + placeholders);
+        }
         return message;
     }
 
     public List<String> toStringList() {
+        if (!placeholders.isEmpty()) {
+            throw new IllegalStateException("Not all placeholders have been registered. Missing: " + placeholders);
+        }
         return List.of(message.split("\n"));
     }
 

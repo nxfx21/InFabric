@@ -65,22 +65,6 @@ public class Strength extends InfuseEffect {
         return new Message(augmented ? MessageType.AUG_STRENGTH_LORE : MessageType.STRENGTH_LORE);
     }
 
-    public static float getExtraDamage(ServerPlayerEntity attacker, float damage) {
-        Infuse plugin = Infuse.getInstance();
-        InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
-        if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return damage;
-
-        float health = attacker.getHealth();
-        if (health < 2f) {
-            damage += 3f;
-        } else if (health < 4f) {
-            damage += 2f;
-        } else if (health < 6f) {
-            damage += 1f;
-        }
-        return damage;
-    }
-
     public static boolean shouldAutoCrit(ServerPlayerEntity player) {
         return player != null && shouldAutoCrit(player.getUuid());
     }
@@ -105,20 +89,34 @@ public class Strength extends InfuseEffect {
         InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
         if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return damage;
 
+        // Health-based damage boost: scales with how much HP the attacker is missing
+        float maxHealth = (float) attacker.getAttributeValue(net.minecraft.entity.attribute.EntityAttributes.MAX_HEALTH);
+        damage += (maxHealth - attacker.getHealth()) * 0.3f;
+
+        // Double damage against non-player entities
         if (!(target instanceof ServerPlayerEntity)) {
-            if (plugin.getMainConfig().strengthDoubleDamage()) {
-                damage *= 2.0f;
-            }
+            damage *= 2.0f;
         }
 
+        // Shield stun when attacker uses an axe against a blocking player
         if (target instanceof ServerPlayerEntity playerTarget && playerTarget.isBlocking()) {
-            if (plugin.getMainConfig().strengthLengthenShieldCooldown() 
-                    && com.nxfx21.infabric.util.ItemUtil.isAxe(attacker.getMainHandStack()) 
-                    && attacker.fallDistance > 0.0F) {
+            if (com.nxfx21.infabric.util.ItemUtil.isAxe(attacker.getMainHandStack())) {
+                playerTarget.getWorld().playSound(null, playerTarget.getX(), playerTarget.getY(), playerTarget.getZ(),
+                    net.minecraft.sound.SoundEvents.ITEM_SHIELD_BREAK, net.minecraft.sound.SoundCategory.PLAYERS, 1, 1);
                 playerTarget.getItemCooldownManager().set(net.minecraft.item.Items.SHIELD.getDefaultStack(), 200);
+                // Halve the damage if the hit connected on a blocking player
+                damage /= 2.0f;
             }
         }
 
         return damage;
+    }
+
+    /** Called from the bow/arrow mixin — caps pierce level at 1. */
+    public static int getArrowPierceLevel(ServerPlayerEntity attacker, int currentLevel) {
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
+        if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return currentLevel;
+        return Math.max(currentLevel, 1);
     }
 }

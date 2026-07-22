@@ -33,7 +33,7 @@ public class Emerald extends InfuseEffect {
 
     @Override
     public void applyPassives(ServerPlayerEntity owner) {
-        owner.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 40, 2, false, false));
+        owner.addStatusEffect(new StatusEffectInstance(StatusEffects.HERO_OF_THE_VILLAGE, 40, 0));
         owner.addStatusEffect(new StatusEffectInstance(StatusEffects.LUCK, 40, 9, false, false));
         
         net.minecraft.item.ItemStack stack = owner.getMainHandStack();
