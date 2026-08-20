@@ -3,7 +3,6 @@ package com.nxfx21.infabric.mixin;
 import com.nxfx21.infabric.Infuse;
 import com.nxfx21.infabric.effects.InfuseEffect;
 import net.minecraft.entity.player.HungerManager;
-import net.minecraft.entity.player.PlayerEntity;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;

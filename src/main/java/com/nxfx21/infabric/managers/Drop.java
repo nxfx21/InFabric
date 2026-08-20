@@ -1,6 +1,5 @@
 package com.nxfx21.infabric.managers;
 
-import com.nxfx21.infabric.Infuse;
 import com.nxfx21.infabric.effects.InfuseEffect;
 import net.minecraft.entity.ItemEntity;
 import net.minecraft.item.ItemStack;

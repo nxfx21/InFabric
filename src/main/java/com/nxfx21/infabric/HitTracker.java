@@ -2,7 +2,6 @@ package com.nxfx21.infabric;
 
 import com.nxfx21.infabric.events.TenHitEvent;
 import com.nxfx21.infabric.effects.InfuseEffect;
-import com.nxfx21.infabric.effects.Thunder;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 import net.minecraft.server.network.ServerPlayerEntity;

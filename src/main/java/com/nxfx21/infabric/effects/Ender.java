@@ -106,8 +106,8 @@ public class Ender extends InfuseEffect {
         if (headState.isOf(net.minecraft.block.Blocks.LAVA) || headState.getFluidState().isIn(net.minecraft.registry.tag.FluidTags.LAVA)) return false;
 
         // Check body and head space
-        boolean bodySafe = bodyState.isAir() || (!bodyState.isLiquid() && bodyState.getCollisionShape(world, blockPos).isEmpty());
-        boolean headSafe = headState.isAir() || (!headState.isLiquid() && headState.getCollisionShape(world, blockPos.up()).isEmpty());
+        boolean bodySafe = bodyState.isAir() || (bodyState.getFluidState().isEmpty() && bodyState.getCollisionShape(world, blockPos).isEmpty());
+        boolean headSafe = headState.isAir() || (headState.getFluidState().isEmpty() && headState.getCollisionShape(world, blockPos.up()).isEmpty());
 
         // Check solid ground below target
         boolean groundSolid = (groundState.isOpaque() || groundState.isFullCube(world, groundPos)) && !groundState.isOf(net.minecraft.block.Blocks.LAVA);
