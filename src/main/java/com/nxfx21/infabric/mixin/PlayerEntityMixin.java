@@ -19,6 +19,11 @@ public class PlayerEntityMixin {
     @Inject(method = "canConsume", at = @At("HEAD"), cancellable = true)
     private void onCanConsume(boolean ignoreHunger, CallbackInfoReturnable<Boolean> cir) {
         PlayerEntity player = (PlayerEntity) (Object) this;
+        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid()) || com.nxfx21.infabric.effects.Apophis.isLocked(player.getUuid())) {
+            cir.setReturnValue(false);
+            return;
+        }
+
         Infuse plugin = Infuse.getInstance();
         if (plugin != null && plugin.getDataManager() != null && plugin.getMainConfig() != null && plugin.getMainConfig().regenCanAlwaysEat()) {
             InfuseEffect regenEffect = InfuseEffect.fromString("regen");
@@ -31,7 +36,7 @@ public class PlayerEntityMixin {
     @ModifyVariable(method = "addExperience", at = @At("HEAD"), argsOnly = true)
     private int modifyExperience(int experience) {
         PlayerEntity player = (PlayerEntity) (Object) this;
-        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid())) {
+        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid()) || com.nxfx21.infabric.effects.Apophis.isLocked(player.getUuid())) {
             return 0;
         }
 
@@ -46,6 +51,14 @@ public class PlayerEntityMixin {
             experience = (int) Math.round(experience * multiplier);
         }
         return experience;
+    }
+
+    @Inject(method = "addExperienceLevels", at = @At("HEAD"), cancellable = true)
+    private void onAddExperienceLevels(int levels, CallbackInfo ci) {
+        PlayerEntity player = (PlayerEntity) (Object) this;
+        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid()) || com.nxfx21.infabric.effects.Apophis.isLocked(player.getUuid())) {
+            ci.cancel();
+        }
     }
 
     @Inject(method = "dropItem(Lnet/minecraft/item/ItemStack;ZZ)Lnet/minecraft/entity/ItemEntity;", at = @At("RETURN"))

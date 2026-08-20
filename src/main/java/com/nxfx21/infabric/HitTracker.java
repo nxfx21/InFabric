@@ -36,6 +36,38 @@ public class HitTracker {
         this.plugin = Infuse.getInstance();
     }
 
+    public void registerHit(UUID playerUuid) {
+        if (playerUuid == null) return;
+        int hits = hitTracker.getOrDefault(playerUuid, 0) + 1;
+        hitTracker.put(playerUuid, hits);
+    }
+
+    public void registerHit(ServerPlayerEntity player) {
+        if (player != null) {
+            registerHit(player.getUuid());
+        }
+    }
+
+    public int getHits(UUID playerUuid) {
+        if (playerUuid == null) return 0;
+        return hitTracker.getOrDefault(playerUuid, 0);
+    }
+
+    public int getHits(ServerPlayerEntity player) {
+        return player != null ? getHits(player.getUuid()) : 0;
+    }
+
+    public void resetHits(UUID playerUuid) {
+        if (playerUuid == null) return;
+        hitTracker.put(playerUuid, 0);
+    }
+
+    public void resetHits(ServerPlayerEntity player) {
+        if (player != null) {
+            resetHits(player.getUuid());
+        }
+    }
+
     public void registerEvents() {
         AttackEntityCallback.EVENT.register((player, world, hand, entity, hitResult) -> {
             if (world.isClient) return ActionResult.PASS;

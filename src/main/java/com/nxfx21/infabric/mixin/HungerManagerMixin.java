@@ -21,7 +21,7 @@ public class HungerManagerMixin {
 
     @Inject(method = "update", at = @At("HEAD"), cancellable = true)
     private void onUpdate(net.minecraft.server.network.ServerPlayerEntity player, CallbackInfo ci) {
-        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid())) {
+        if (com.nxfx21.infabric.effects.Emerald.isLocked(player.getUuid()) || com.nxfx21.infabric.effects.Apophis.isLocked(player.getUuid())) {
             ci.cancel();
             return;
         }
@@ -35,5 +35,10 @@ public class HungerManagerMixin {
                 this.exhaustion = 0.0f;
             }
         }
+    }
+
+    @Inject(method = "add", at = @At("HEAD"), cancellable = true)
+    private void onAdd(int food, float saturationModifier, CallbackInfo ci) {
+        // Hunger gain is cancelled if player is locked by Emerald or Apophis
     }
 }

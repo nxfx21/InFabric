@@ -103,6 +103,3 @@ javacore.*.txt
 core.*.dmp
 heapdump.*.phd
 Snap.*.trc
-
-# agent artifacts
-.agents/

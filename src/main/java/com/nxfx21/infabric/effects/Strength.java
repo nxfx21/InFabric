@@ -65,6 +65,22 @@ public class Strength extends InfuseEffect {
         return new Message(augmented ? MessageType.AUG_STRENGTH_LORE : MessageType.STRENGTH_LORE);
     }
 
+    public static float getExtraDamage(ServerPlayerEntity attacker, float damage) {
+        Infuse plugin = Infuse.getInstance();
+        InfuseEffect strengthEffect = InfuseEffect.fromString("strength");
+        if (strengthEffect == null || !plugin.getDataManager().hasEffect(attacker.getUuid(), strengthEffect)) return damage;
+
+        float health = attacker.getHealth();
+        if (health < 2f) {
+            damage += 3f;
+        } else if (health < 4f) {
+            damage += 2f;
+        } else if (health < 6f) {
+            damage += 1f;
+        }
+        return damage;
+    }
+
     public static boolean shouldAutoCrit(ServerPlayerEntity player) {
         return player != null && shouldAutoCrit(player.getUuid());
     }

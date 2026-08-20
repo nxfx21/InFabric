@@ -1,4 +1,4 @@
-![INFABRIC](https://gist.github.com/nxfx21/77a4d90b250f0cd8567b736259f296df/raw/584572cb2a97a1b574ed89d455c27f5bc6e27597/infabric.png)
+![INFABRIC](https://gist.githubusercontent.com/nxfx21/77a4d90b250f0cd8567b736259f296df/raw/584572cb2a97a1b574ed89d455c27f5bc6e27597/infabric.png)
 
 ---
 
@@ -15,13 +15,16 @@ The Brewing Stand UI has been replaced with a Crafting Table! Use it to craft yo
 ## How Effects & Rituals Work
 
 #### Crafting Broadcast
+
 * When an effect is crafted, its crafting coordinates are broadcast to the entire server.
 
 #### Augmented Effects
+
 * The first effect of each type to be crafted becomes an **augmented effect**.
 * Augmented effects have **half the cooldown** of regular effects.
 
 #### Ritual Requirement
+
 * Crafting an augmented effect triggers a ritual.
 * Rituals last for **10 minutes** before the augmented effect is finally produced.
 * Players don't need to do anything during the ritual except be the one to claim the effect once it finishes!
@@ -87,6 +90,7 @@ The first effect crafted starts a ritual and gives an augmented effect, next 3 g
 ---
 
 #### Recipe Overviews
+
 ![Default Recipes](https://cdn.modrinth.com/data/cached_images/cd619d2c9eb42d4368405aba345063aa01d7f5fb.png)
 ![Extra Recipes](https://cdn.modrinth.com/data/cached_images/3c54969c686f29ffcef9fb43d5b1455d4d3d4bba.png)
 ![Thief Recipe](https://cdn.modrinth.com/data/cached_images/59eef76248b09bd0d7f1fd0e6310c439bdf3b9ff.png)
@@ -94,6 +98,7 @@ The first effect crafted starts a ritual and gives an augmented effect, next 3 g
 ---
 
 #### Individual Effects
+
 ![Strength](https://cdn.modrinth.com/data/cached_images/f8d3e628a5cecbe35a06f14a704de471af057eea_0.webp)
 ![Emerald](https://cdn.modrinth.com/data/cached_images/2293614a520fca5f7509ce350c09ae9c05d90d66_0.webp)
 ![Feather](https://cdn.modrinth.com/data/cached_images/e0b9605a3c88eb8a5a47e2757fa93bc41a586e23_0.webp)
@@ -113,9 +118,9 @@ The first effect crafted starts a ritual and gives an augmented effect, next 3 g
 
 ## Credits - For making the Original InfuseSMP plugin
 
-  - @TurboJax
-  - @CatAdmirer
-  - @duffmansjnr-hub
-  - @amhunter1
+* @TurboJax
+* @CatAdmirer
+* @duffmansjnr-hub
+* @amhunter1
 
 ## Ported by nxfx21

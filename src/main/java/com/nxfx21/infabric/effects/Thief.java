@@ -55,7 +55,7 @@ public class Thief extends InfuseEffect {
                 InfuseEffect stolen = effect1 != null ? effect1 : effect2;
                 if (stolen != null) {
                     plugin.getDataManager().setEffect(victim.getUuid(), effect1 != null ? "1" : "2", null);
-                    plugin.getDataManager().setEffect(owner.getUuid(), "1", stolen); // For now just set to slot 1
+                    plugin.getDataManager().setEffect(owner.getUuid(), "1", stolen); // Assign stolen effect to primary slot (slot 1)
                     owner.sendMessage(net.minecraft.text.Text.literal("Stole " + stolen.getKey() + " from " + victim.getName().getString()), true);
                     victim.sendMessage(net.minecraft.text.Text.literal("Your " + stolen.getKey() + " was stolen!"), true);
                     break;

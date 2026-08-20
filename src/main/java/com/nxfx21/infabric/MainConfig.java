@@ -92,6 +92,9 @@ public class MainConfig {
     public String discordWebhookUrl() { return getString("discord_webhook_url", ""); }
     public boolean brewingGui() { return getBoolean("brewing_gui", true); }
     public String effectDrops() { return getString("effect_drops", "DEFAULT"); }
+    public void setEffectDrops(String value) {
+        config.addProperty("effect_drops", value);
+    }
     public boolean joinEffectsEnabled() { return getBoolean("join_effects_enabled", false); }
     
     public boolean enableApophis() { return getBoolean("extra_effects_Apophis", false); }
@@ -138,6 +141,12 @@ public class MainConfig {
     public boolean strengthLengthenShieldCooldown() { return getBooleanOption("strengthLengthenShieldCooldown", "strength_lengthen_shield_cooldown", true); }
     public boolean strengthDoubleDamage() { return getBooleanOption("strengthDoubleDamage", "strength_double_damage", true); }
     public boolean regenCanAlwaysEat() { return getBooleanOption("regenCanAlwaysEat", "regen_can_always_eat", true); }
+
+    public int getCraftLimit(com.nxfx21.infabric.effects.InfuseEffect effect) {
+        if (effect == null) return 1;
+        String key = "craft_limits." + effect.getKey();
+        return getInt(key, effect.isAugmented() ? 1 : 3);
+    }
 
     public long cooldown(com.nxfx21.infabric.effects.InfuseEffect effect) {
         return getInt("cooldowns." + effect.getKey(), 60);

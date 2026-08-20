@@ -26,7 +26,7 @@ public class DataManager {
         this.config = new JsonObject();
     }
 
-    public boolean load() {
+    public synchronized boolean load() {
         if (!dataFile.getParentFile().exists()) {
             dataFile.getParentFile().mkdirs();
         }
@@ -44,7 +44,7 @@ public class DataManager {
         }
     }
 
-    public boolean save() {
+    public synchronized boolean save() {
         try {
             if (!dataFile.exists()) {
                 dataFile.getParentFile().mkdirs();
@@ -67,18 +67,18 @@ public class DataManager {
         return config.getAsJsonObject(key);
     }
 
-    public int getExistingCount(com.nxfx21.infabric.effects.InfuseEffect effect) {
+    public synchronized int getExistingCount(com.nxfx21.infabric.effects.InfuseEffect effect) {
         JsonObject existing = getOrCreateObject("existing-effects");
         return existing.has(effect.toString()) ? existing.get(effect.toString()).getAsInt() : 0;
     }
 
-    public void setExistingCount(com.nxfx21.infabric.effects.InfuseEffect effect, int crafted) {
+    public synchronized void setExistingCount(com.nxfx21.infabric.effects.InfuseEffect effect, int crafted) {
         JsonObject existing = getOrCreateObject("existing-effects");
         existing.addProperty(effect.toString(), crafted);
         save();
     }
 
-    public List<UUID> getTrusted(UUID truster) {
+    public synchronized List<UUID> getTrusted(UUID truster) {
         JsonObject pData = getOrCreateObject(truster.toString());
         List<UUID> trusted = new ArrayList<>();
         if (pData.has("trust")) {
@@ -90,7 +90,7 @@ public class DataManager {
         return trusted;
     }
 
-    public void setTrusted(UUID truster, List<UUID> trusted) {
+    public synchronized void setTrusted(UUID truster, List<UUID> trusted) {
         JsonObject pData = getOrCreateObject(truster.toString());
         JsonArray arr = new JsonArray();
         for (UUID t : trusted) {
@@ -100,7 +100,7 @@ public class DataManager {
         save();
     }
 
-    public void addTrust(UUID caster, UUID toTrust) {
+    public synchronized void addTrust(UUID caster, UUID toTrust) {
         List<UUID> trustedPlayers = getTrusted(caster);
         if (!trustedPlayers.contains(toTrust)) {
             trustedPlayers.add(toTrust);
@@ -108,19 +108,19 @@ public class DataManager {
         }
     }
 
-    public void removeTrust(UUID caster, UUID trusted) {
+    public synchronized void removeTrust(UUID caster, UUID trusted) {
         List<UUID> trustedSet = getTrusted(caster);
         trustedSet.remove(trusted);
         setTrusted(caster, trustedSet);
     }
 
-    public boolean isTrusted(UUID caster, UUID trusted) {
+    public synchronized boolean isTrusted(UUID caster, UUID trusted) {
         if (caster == null || trusted == null) return false;
         if (caster.equals(trusted)) return true;
         return getTrusted(caster).contains(trusted);
     }
 
-    public void setEffect(UUID playerUUID, String slot, @Nullable com.nxfx21.infabric.effects.InfuseEffect effect) {
+    public synchronized void setEffect(UUID playerUUID, String slot, @Nullable com.nxfx21.infabric.effects.InfuseEffect effect) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         if (effect == null) {
             pData.remove(slot);
@@ -131,7 +131,7 @@ public class DataManager {
     }
 
     @Nullable
-    public com.nxfx21.infabric.effects.InfuseEffect getEffect(UUID playerUUID, String slot) {
+    public synchronized com.nxfx21.infabric.effects.InfuseEffect getEffect(UUID playerUUID, String slot) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         if (!pData.has(slot)) return null;
         String effectKey = pData.get(slot).getAsString();
@@ -142,23 +142,23 @@ public class DataManager {
         return effect;
     }
 
-    public boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect) {
+    public synchronized boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect) {
         return hasEffect(player, effect, false);
     }
 
-    public boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, boolean differentiateAugmented) {
+    public synchronized boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, boolean differentiateAugmented) {
         return hasEffect(player, effect, differentiateAugmented, "1") || hasEffect(player, effect, differentiateAugmented, "2");
     }
 
-    public boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, String slot) {
+    public synchronized boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, String slot) {
         return hasEffect(player, effect, false, slot);
     }
 
-    public boolean hasEffect(net.minecraft.server.network.ServerPlayerEntity player, com.nxfx21.infabric.effects.InfuseEffect effect) {
+    public synchronized boolean hasEffect(net.minecraft.server.network.ServerPlayerEntity player, com.nxfx21.infabric.effects.InfuseEffect effect) {
         return hasEffect(player.getUuid(), effect);
     }
 
-    public boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, boolean differentiateAugmented, String slot) {
+    public synchronized boolean hasEffect(UUID player, com.nxfx21.infabric.effects.InfuseEffect effect, boolean differentiateAugmented, String slot) {
         com.nxfx21.infabric.effects.InfuseEffect equippedEffect = getEffect(player, slot);
         if (equippedEffect == null) return false;
         if (differentiateAugmented) {
@@ -167,28 +167,28 @@ public class DataManager {
         return effect.getId() == equippedEffect.getId();
     }
 
-    public boolean hasAnyData(UUID playerUUID) {
+    public synchronized boolean hasAnyData(UUID playerUUID) {
         return config.has(playerUUID.toString());
     }
 
-    public void removeEffect(UUID playerUUID, String slot) {
+    public synchronized void removeEffect(UUID playerUUID, String slot) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         pData.remove(slot);
         save();
     }
 
-    public void setControlMode(UUID playerUUID, String defaultMode) {
+    public synchronized void setControlMode(UUID playerUUID, String defaultMode) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         pData.addProperty("controls", defaultMode);
         save();
     }
 
-    public String getControlMode(UUID playerUUID) {
+    public synchronized String getControlMode(UUID playerUUID) {
         JsonObject pData = getOrCreateObject(playerUUID.toString());
         return pData.has("controls") ? pData.get("controls").getAsString() : "offhand";
     }
 
-    public void applyUpdates() {
+    public synchronized void applyUpdates() {
         save();
     }
 }

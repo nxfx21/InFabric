@@ -87,9 +87,32 @@ public class Ender extends InfuseEffect {
         CooldownManager.setTimes(playerUUID, "ender", duration, cooldown);
     }
 
-    private static boolean isSafeTeleportLocation(ServerWorld world, Vec3d pos) {
+    public static boolean isSafeTeleportLocation(ServerWorld world, Vec3d pos) {
+        if (world == null || pos == null) return false;
         BlockPos blockPos = BlockPos.ofFloored(pos);
-        return world.getBlockState(blockPos).isAir() && world.getBlockState(blockPos.up()).isAir();
+        if (blockPos.getY() < world.getBottomY() || blockPos.getY() >= world.getTopYInclusive()) return false;
+
+        BlockPos groundPos = blockPos.down();
+        if (groundPos.getY() < world.getBottomY()) return false;
+
+        net.minecraft.block.BlockState groundState = world.getBlockState(groundPos);
+        net.minecraft.block.BlockState bodyState = world.getBlockState(blockPos);
+        net.minecraft.block.BlockState headState = world.getBlockState(blockPos.up());
+
+        // Prevent void and lava
+        if (groundState.isAir() || groundState.isOf(net.minecraft.block.Blocks.VOID_AIR)) return false;
+        if (groundState.isOf(net.minecraft.block.Blocks.LAVA) || groundState.getFluidState().isIn(net.minecraft.registry.tag.FluidTags.LAVA)) return false;
+        if (bodyState.isOf(net.minecraft.block.Blocks.LAVA) || bodyState.getFluidState().isIn(net.minecraft.registry.tag.FluidTags.LAVA)) return false;
+        if (headState.isOf(net.minecraft.block.Blocks.LAVA) || headState.getFluidState().isIn(net.minecraft.registry.tag.FluidTags.LAVA)) return false;
+
+        // Check body and head space
+        boolean bodySafe = bodyState.isAir() || (!bodyState.isLiquid() && bodyState.getCollisionShape(world, blockPos).isEmpty());
+        boolean headSafe = headState.isAir() || (!headState.isLiquid() && headState.getCollisionShape(world, blockPos.up()).isEmpty());
+
+        // Check solid ground below target
+        boolean groundSolid = (groundState.isOpaque() || groundState.isFullCube(world, groundPos)) && !groundState.isOf(net.minecraft.block.Blocks.LAVA);
+
+        return bodySafe && headSafe && groundSolid;
     }
 
     public static void onAttack(ServerPlayerEntity attacker, net.minecraft.entity.LivingEntity target) {

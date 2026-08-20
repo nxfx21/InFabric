@@ -142,4 +142,5 @@ public class Infuse implements ModInitializer {
     public ParticleManager getParticleManager() { return particleManager; }
     public HitTracker getHitTracker() { return hitTracker; }
     public Drop getDropManager() { return dropManager; }
+    public EffectCraftManager getEffectCraftManager() { return effectCraftManager; }
 }

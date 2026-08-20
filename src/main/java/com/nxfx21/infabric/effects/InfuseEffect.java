@@ -66,6 +66,11 @@ public abstract class InfuseEffect {
         return Map.copyOf(REGISTERED_EFFECTS);
     }
 
+    @NotNull
+    public static java.util.Collection<InfuseEffect> getAllEffects() {
+        return REGISTERED_EFFECTS.values();
+    }
+
     public int getId() {
         return id;
     }

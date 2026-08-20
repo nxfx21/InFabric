@@ -26,7 +26,7 @@ dependencies {
     modImplementation include("eu.pb4:sgui:${project.sgui_version}")
     
     // PlaceholderAPI
-    modImplementation include("eu.pb4:placeholder-api:${project.placeholder_api_version}")
+    modImplementation "eu.pb4:placeholder-api:${project.placeholder_api_version}"
     
     // SnakeYAML for parsing the old config files
     implementation include("org.yaml:snakeyaml:2.3")
