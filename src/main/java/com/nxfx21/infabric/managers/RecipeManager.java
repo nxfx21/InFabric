@@ -1,7 +1,6 @@
 package com.nxfx21.infabric.managers;
 
 import com.nxfx21.infabric.Infuse;
-import com.nxfx21.infabric.effects.Ender;
 import com.nxfx21.infabric.effects.InfuseEffect;
 import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
@@ -80,7 +79,6 @@ public class RecipeManager {
         reload();
     }
 
-    @SuppressWarnings("unchecked")
     public boolean isRecipeEnabled(InfuseEffect mapping) {
         if (mapping == null) return false;
         String key = mapping.getRegularVersion().getKey();
@@ -93,7 +91,6 @@ public class RecipeManager {
         return false;
     }
 
-    @SuppressWarnings("unchecked")
     public List<String> getRecipeShape(InfuseEffect mapping) {
         if (mapping == null) return Collections.emptyList();
         String key = mapping.getRegularVersion().getKey();
@@ -109,7 +106,6 @@ public class RecipeManager {
         return Collections.emptyList();
     }
 
-    @SuppressWarnings("unchecked")
     public Map<Character, Item> getRecipeIngredients(InfuseEffect mapping) {
         Map<Character, Item> ingredients = new HashMap<>();
         if (mapping == null) return ingredients;

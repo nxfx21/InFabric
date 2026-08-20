@@ -192,7 +192,6 @@ public class Thief extends InfuseEffect {
         });
 
         final long durationSeconds = 3600;
-        final long startTime = System.currentTimeMillis();
 
         plugin.getHitTracker().scheduleTask(20L, new Runnable() {
             int elapsed = 0;

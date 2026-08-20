@@ -7,7 +7,6 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.*;
 
 public class MessageTranslator {
@@ -27,7 +26,6 @@ public class MessageTranslator {
         }
     }
 
-    @SuppressWarnings("unchecked")
     public void loadLocale(String locale) {
         Map<String, Object> translations = new HashMap<>();
         Yaml yaml = new Yaml();
