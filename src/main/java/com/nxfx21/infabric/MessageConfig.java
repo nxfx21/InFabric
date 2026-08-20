@@ -60,7 +60,7 @@ public class MessageConfig {
     }
 
     public static String getMessage(Message.MessageType messageType) {
-        String key = messageType.configKey;
+        String key = messageType.name().toLowerCase();
         if (!config.has(key)) {
             Infuse.LOGGER.warn("Could not find \"{}\" in messages.json, using default.", key);
             if (messageType.defaultValue.contains("\n")) {

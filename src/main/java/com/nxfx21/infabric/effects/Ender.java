@@ -28,6 +28,7 @@ import java.util.UUID;
 
 public class Ender extends InfuseEffect {
     private final Infuse plugin;
+    public static final java.util.Set<UUID> cursedPlayers = GlobalLoop.cursedPlayers;
 
     public Ender() {
         this(false);
@@ -152,6 +153,24 @@ public class Ender extends InfuseEffect {
             plugin.getHitTracker().scheduleTask(1200L, () -> {
                 GlobalLoop.cursedPlayers.remove(victim.getUuid());
             });
+        }
+    }
+
+    public static void onPlayerDamage(ServerPlayerEntity player, net.minecraft.entity.damage.DamageSource source, float amount) {
+        if (player == null || source == null) return;
+        if (source.isOf(net.minecraft.entity.damage.DamageTypes.CAMPFIRE)) return;
+
+        if (GlobalLoop.cursedPlayers.contains(player.getUuid())) {
+            net.minecraft.entity.damage.DamageSource fakeSource = player.getWorld().getDamageSources().create(net.minecraft.entity.damage.DamageTypes.CAMPFIRE, player);
+            for (UUID cursedUuid : GlobalLoop.cursedPlayers) {
+                if (cursedUuid.equals(player.getUuid())) continue;
+                if (player.getServer() != null) {
+                    ServerPlayerEntity other = player.getServer().getPlayerManager().getPlayer(cursedUuid);
+                    if (other != null && other.isAlive()) {
+                        other.damage(player.getServerWorld(), fakeSource, amount);
+                    }
+                }
+            }
         }
     }
 

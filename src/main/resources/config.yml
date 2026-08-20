@@ -12,6 +12,10 @@
 #╚██████╗╚██████╔╝██║ ╚████║██║     ██║╚██████╔╝██╗   ██║   ██║ ╚═╝ ██║███████╗
 # ╚═════╝ ╚═════╝ ╚═╝  ╚═══╝╚═╝     ╚═╝ ╚═════╝ ╚═╝   ╚═╝   ╚═╝     ╚═╝╚══════╝
 
+# We have some basic localization support.
+# We support "en_US", "tr", "ru", and "es"
+lang: en_US
+
 allow_infinite_effects: false
 
 ritual_duration: 600  # Duration in seconds (10 minutes)
@@ -31,10 +35,14 @@ discord_webhook_url: ""
 
 brewing_gui: true
 
-# random = Random effect drops
-# 1/2 = Slot 1/2 Drops
-# none = None drop
-effect_drops: Random
+# Determines what effect is dropped.
+# "random" = Drops effect 1 or 2 at random.  If no effect is in the random slot, it will drop the effect in the other slot.
+# "prefer_1" = Drops the effect in slot 1.  If no effect is in slot 1, it will drop the effect in slot 2.
+# "prefer_2" = Drops the effect in slot 2.  If no effect is in slot 2, it will drop the effect in slot 1.
+# "only_1" = Drops the effect in slot 1.  If no effect is in slot 1, nothing happens.
+# "only_2" = Drops the effect in slot 2.  If no effect is in slot 2, nothing happens.
+# "none" = No effects will drop
+effect_drops: random
 
 # The number of seconds that it takes for 1 hit to be removed from the hit timer.
 # This is primarily used to trigger the "on ten hit" abilities of each effect.
@@ -43,7 +51,7 @@ hit_counter_decay_seconds: 15
 
 join_effects_enabled: false
 
-join_effects: # Same Names from messages.yml
+join_effects:
   - ocean
   - emerald
   - fire
@@ -80,12 +88,18 @@ invis:
     augmented: 25
 
 apophis:
+  xp_stolen_per_hit: 15
+  xp_stolen_percent: 1
+  percent_xp_to_share: 0.5
+  lock_duration_seconds: 10
   cooldown:
     default: 125
     augmented: 75
   duration:
     default: 15
     augmented: 18
+  enchantment:
+    looting_level: 5
 
 emerald:
   xp_stolen_per_hit: 15
@@ -100,6 +114,9 @@ emerald:
     augmented: 35
   enchantment:
     looting_level: 5
+  multiplier-xp:
+    standard: 2
+    use-effect: 4
 
 ender:
   cooldown:
@@ -108,6 +125,11 @@ ender:
   duration:
     default: 15
     augmented: 20
+  passive:
+    radius: 10
+  spark:
+    # WARNING: The higher this value is, the more it can impact server performance.
+    max-distance: 15
 
 feather:
   cooldown:
@@ -116,6 +138,9 @@ feather:
   duration:
     default: 2
     augmented: 2
+  land:
+    radius: 4
+    damage: 8
 
 fire:
   cooldown:
@@ -124,6 +149,12 @@ fire:
   duration:
     default: 5
     augmented: 6
+  passive:
+    # How fast should they be able to walk while in lava?
+    walk-speed: 0.6
+  spark:
+    radius: 5
+    explosion-radius: 5
 
 frost:
   cooldown:
@@ -132,6 +163,13 @@ frost:
   duration:
     default: 15
     augmented: 20
+  passive:
+    # WARNING: The higher this value is, the more it can impact server performance.
+    snow-changing-radius: 3
+    # How fast should they be able to walk in powdered snow?
+    walk-speed: 0.6
+  spark:
+    radius: 5
 
 haste:
   cooldown:
@@ -160,6 +198,12 @@ ocean:
   duration:
     default: 15
     augmented: 20
+  passive:
+    drown-strength: 5
+    drown-damage: 1
+  spark:
+    drown-strength: 20
+    drown-damage: 2
 
 regen:
   cooldown:
@@ -168,6 +212,8 @@ regen:
   duration:
     default: 15
     augmented: 30
+  spark:
+    heal-trusted-radius: 5
 
 speed:
   dashMultiplier: 20

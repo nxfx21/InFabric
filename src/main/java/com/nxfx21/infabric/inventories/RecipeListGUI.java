@@ -2,6 +2,7 @@ package com.nxfx21.infabric.inventories;
 
 import com.nxfx21.infabric.Infuse;
 import com.nxfx21.infabric.effects.InfuseEffect;
+import eu.pb4.sgui.api.elements.GuiElementBuilder;
 import eu.pb4.sgui.api.gui.SimpleGui;
 import net.minecraft.screen.ScreenHandlerType;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -12,15 +13,22 @@ public class RecipeListGUI extends SimpleGui {
     public RecipeListGUI(ServerPlayerEntity player) {
         super(ScreenHandlerType.GENERIC_9X6, player, false);
         this.setTitle(Text.literal("Recipes"));
-        
+
         int slot = 0;
         for (InfuseEffect effect : InfuseEffect.getRegisteredEffects().values()) {
             if (effect.isAugmented()) continue;
-            
+
             if (Infuse.getInstance().getRecipeManager().isRecipeEnabled(effect)) {
-                this.setSlot(slot++, effect.createItem());
+                this.setSlot(slot++, new GuiElementBuilder(effect.createItem())
+                        .setCallback((index, type, action) -> {
+                            if (effect.getAugmentedVersion() != null) {
+                                new AugOrRegChooser(player, effect).open();
+                            } else {
+                                new RecipeGUI(player, effect, this).open();
+                            }
+                        }));
             }
-            
+
             if (slot >= 54) break;
         }
     }

@@ -145,4 +145,99 @@ public class Thief extends InfuseEffect {
             onPlayerHit(attacker, victim);
         }
     }
+
+    public static final java.util.Map<UUID, net.minecraft.entity.boss.ServerBossBar> activeDisguises = new java.util.concurrent.ConcurrentHashMap<>();
+
+    public static void disguiseAs(ServerPlayerEntity killer, ServerPlayerEntity victim) {
+        if (killer == null || victim == null) return;
+        Infuse plugin = Infuse.getInstance();
+        UUID killerUuid = killer.getUuid();
+
+        java.io.File disguiseFile = new java.io.File(plugin.getDataFolder(), "data/ThiefPlayers/" + killerUuid + ".txt");
+        disguiseFile.getParentFile().mkdirs();
+
+        if (!disguiseFile.exists()) {
+            try (java.io.FileWriter writer = new java.io.FileWriter(disguiseFile)) {
+                com.mojang.authlib.GameProfile profile = killer.getGameProfile();
+                java.util.Optional<com.mojang.authlib.properties.Property> textures = profile.getProperties().get("textures").stream().findFirst();
+
+                writer.write(killer.getName().getString() + "\n");
+                if (textures.isEmpty()) {
+                    writer.write("null\nnull");
+                } else {
+                    writer.write(textures.get().value() + "\n");
+                    writer.write(String.valueOf(textures.get().signature()));
+                }
+            } catch (java.io.IOException e) {
+                Infuse.LOGGER.error("Failed to save original skin for thief disguise", e);
+            }
+        }
+
+        com.mojang.authlib.GameProfile victimProfile = victim.getGameProfile();
+        java.util.Optional<com.mojang.authlib.properties.Property> victimTextures = victimProfile.getProperties().get("textures").stream().findFirst();
+
+        if (victimTextures.isPresent()) {
+            killer.getGameProfile().getProperties().removeAll("textures");
+            killer.getGameProfile().getProperties().put("textures", victimTextures.get());
+        }
+
+        net.minecraft.entity.boss.ServerBossBar bossBar = activeDisguises.computeIfAbsent(killerUuid, u -> {
+            net.minecraft.entity.boss.ServerBossBar bar = new net.minecraft.entity.boss.ServerBossBar(
+                    net.minecraft.text.Text.literal("Disguise Time Remaining"),
+                    net.minecraft.entity.boss.BossBar.Color.RED,
+                    net.minecraft.entity.boss.BossBar.Style.PROGRESS
+            );
+            bar.addPlayer(killer);
+            return bar;
+        });
+
+        final long durationSeconds = 3600;
+        final long startTime = System.currentTimeMillis();
+
+        plugin.getHitTracker().scheduleTask(20L, new Runnable() {
+            int elapsed = 0;
+            @Override
+            public void run() {
+                elapsed++;
+                long remaining = durationSeconds - elapsed;
+                if (remaining <= 0 || killer.isDisconnected()) {
+                    removeDisguise(killer);
+                    return;
+                }
+                float progress = Math.max(0.0f, (float) remaining / durationSeconds);
+                long mins = remaining / 60;
+                long secs = remaining % 60;
+                bossBar.setName(net.minecraft.text.Text.literal(String.format("Disguise: %dm %02ds", mins, secs)));
+                bossBar.setPercent(progress);
+                plugin.getHitTracker().scheduleTask(20L, this);
+            }
+        });
+    }
+
+    public static void removeDisguise(ServerPlayerEntity player) {
+        if (player == null) return;
+        UUID uuid = player.getUuid();
+
+        net.minecraft.entity.boss.ServerBossBar bar = activeDisguises.remove(uuid);
+        if (bar != null) {
+            bar.clearPlayers();
+        }
+
+        java.io.File disguiseFile = new java.io.File(Infuse.getInstance().getDataFolder(), "data/ThiefPlayers/" + uuid + ".txt");
+        if (disguiseFile.exists()) {
+            try (java.util.Scanner scanner = new java.util.Scanner(disguiseFile)) {
+                com.mojang.authlib.GameProfile profile = player.getGameProfile();
+                if (scanner.hasNextLine()) scanner.nextLine(); // Name
+                String value = scanner.hasNextLine() ? scanner.nextLine() : "";
+                String signature = scanner.hasNextLine() ? scanner.nextLine() : null;
+                if ("null".equals(signature)) signature = null;
+
+                profile.getProperties().removeAll("textures");
+                if (!"null".equals(value) && !value.isEmpty()) {
+                    profile.getProperties().put("textures", new com.mojang.authlib.properties.Property("textures", value, signature));
+                }
+            } catch (Exception ignored) {}
+            disguiseFile.delete();
+        }
+    }
 }

@@ -23,6 +23,14 @@ public class PlayerDeathListener {
             head.set(DataComponentTypes.PROFILE, new ProfileComponent(player.getGameProfile()));
             player.getWorld().spawnEntity(new net.minecraft.entity.ItemEntity(player.getWorld(), player.getX(), player.getY(), player.getZ(), head));
         }
+
         plugin.getEffectManager().handleDeath(player);
+
+        if (damageSource.getAttacker() instanceof ServerPlayerEntity killer) {
+            com.nxfx21.infabric.effects.InfuseEffect thiefEffect = com.nxfx21.infabric.effects.InfuseEffect.fromString("thief");
+            if (thiefEffect != null && plugin.getDataManager().hasEffect(killer.getUuid(), thiefEffect)) {
+                com.nxfx21.infabric.effects.Thief.disguiseAs(killer, player);
+            }
+        }
     }
 }

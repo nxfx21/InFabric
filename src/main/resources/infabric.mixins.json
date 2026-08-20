@@ -5,6 +5,9 @@
   "compatibilityLevel": "JAVA_21",
   "mixins": [
     "BowItemMixin",
+    "CrafterBlockMixin",
+    "CraftingResultSlotMixin",
+    "CraftingScreenHandlerMixin",
     "EnchantmentScreenHandlerMixin",
     "HungerManagerMixin",
     "InventoryCloseMixin",
@@ -15,7 +18,8 @@
     "ServerPlayNetworkHandlerMixin",
     "ServerChunkLoadingManagerMixin",
     "EntityTrackerMixin",
-    "AbstractWindChargeEntityMixin"
+    "AbstractWindChargeEntityMixin",
+    "ServerPlayerEntityMixin"
   ],
   "injectors": {
     "defaultRequire": 1

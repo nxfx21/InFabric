@@ -1,16 +1,13 @@
 emerald:
   enabled: true
   shape:
-    - "WSW"
-    - "OEO"
-    - "CTC"
+    - "DED"
+    - "EVE"
+    - "DED"
   ingredients:
-    W: WILD_ARMOR_TRIM_SMITHING_TEMPLATE
-    S: SNIFFER_EGG
-    O: OMINOUS_BOTTLE
+    D: DIAMOND_BLOCK
     E: EMERALD_BLOCK
-    C: ENDER_CHEST
-    T: ENCHANTING_TABLE
+    V: VILLAGER_SPAWN_EGG
 
 feather:
   enabled: true

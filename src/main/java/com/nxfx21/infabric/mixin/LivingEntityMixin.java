@@ -59,6 +59,7 @@ public abstract class LivingEntityMixin extends Entity {
     private void onDamageHead(DamageSource source, float amount, org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable<Boolean> cir) {
         if ((Object) this instanceof ServerPlayerEntity player) {
             com.nxfx21.infabric.effects.Feather.onFallDamage(player, source, amount, cir);
+            com.nxfx21.infabric.effects.Ender.onPlayerDamage(player, source, amount);
         }
     }
 
