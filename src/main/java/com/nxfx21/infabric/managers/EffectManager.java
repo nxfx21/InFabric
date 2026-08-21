@@ -179,6 +179,10 @@ public class EffectManager {
             }
             case "only_1" -> dropEffect(player, "1");
             case "only_2" -> dropEffect(player, "2");
+            case "both" -> {
+                dropEffect(player, "1");
+                dropEffect(player, "2");
+            }
             case "none" -> {}
         }
     }

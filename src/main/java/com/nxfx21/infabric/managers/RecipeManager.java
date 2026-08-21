@@ -83,10 +83,14 @@ public class RecipeManager {
         if (mapping == null) return false;
         String key = mapping.getRegularVersion().getKey();
         Object val = config.get(key);
+        if (val == null) {
+            val = config.get("aug_" + key);
+        }
         if (val instanceof Map<?, ?> map) {
             Object enabled = map.get("enabled");
             if (enabled instanceof Boolean b) return b;
             if (enabled != null) return Boolean.parseBoolean(String.valueOf(enabled));
+            return true;
         }
         return false;
     }
@@ -95,6 +99,9 @@ public class RecipeManager {
         if (mapping == null) return Collections.emptyList();
         String key = mapping.getRegularVersion().getKey();
         Object val = config.get(key);
+        if (val == null) {
+            val = config.get("aug_" + key);
+        }
         if (val instanceof Map<?, ?> map) {
             Object shape = map.get("shape");
             if (shape instanceof List<?> list) {
@@ -111,6 +118,9 @@ public class RecipeManager {
         if (mapping == null) return ingredients;
         String key = mapping.getRegularVersion().getKey();
         Object val = config.get(key);
+        if (val == null) {
+            val = config.get("aug_" + key);
+        }
         if (val instanceof Map<?, ?> map) {
             Object ingObj = map.get("ingredients");
             if (ingObj instanceof Map<?, ?> ingMap) {
@@ -128,8 +138,8 @@ public class RecipeManager {
                         }
                     }
 
-                    Item item = getItemFromName(matName);
-                    if (item != null && item != Items.AIR) {
+                    Item item = Registries.ITEM.get(Identifier.of("minecraft", matName));
+                    if (item != Items.AIR) {
                         ingredients.put(c, item);
                     }
                 }

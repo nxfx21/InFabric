@@ -5,6 +5,10 @@ build/
 run/
 .idea/
 .vscode/
+.classpath
+.project
+.settings/
+*.launch
 *.log
 
 # Preserves eula and any dependencies

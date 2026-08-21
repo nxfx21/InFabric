@@ -24,7 +24,11 @@ public class PlayerDeathListener {
             player.getWorld().spawnEntity(new net.minecraft.entity.ItemEntity(player.getWorld(), player.getX(), player.getY(), player.getZ(), head));
         }
 
-        plugin.getEffectManager().handleDeath(player);
+        // Skipping natural deaths if the config allows
+        boolean isNaturalDeath = !(damageSource.getAttacker() instanceof ServerPlayerEntity);
+        if (!isNaturalDeath || plugin.getMainConfig().dropOnNaturalDeath()) {
+            plugin.getEffectManager().handleDeath(player);
+        }
 
         if (damageSource.getAttacker() instanceof ServerPlayerEntity killer) {
             com.nxfx21.infabric.effects.InfuseEffect thiefEffect = com.nxfx21.infabric.effects.InfuseEffect.fromString("thief");

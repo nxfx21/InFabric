@@ -70,11 +70,18 @@ public class InfuseCommandManager {
             registerUninfuseCommand(dispatcher);
             registerControlsCommand(dispatcher);
             registerRecipesCommand(dispatcher);
+            registerSparkCommands(dispatcher);
         });
     }
 
     private void registerInfuseCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("infuse")
+            .then(literal("help")
+                .executes(context -> {
+                    new Message(MessageType.INFUSE_HELP).toComponentList().forEach(context.getSource()::sendMessage);
+                    return 1;
+                })
+            )
             .then(literal("reload")
                 .requires(source -> source.hasPermissionLevel(2))
                 .executes(context -> {
@@ -84,6 +91,49 @@ public class InfuseCommandManager {
                     context.getSource().sendMessage(Text.literal("Infuse configs and translations reloaded."));
                     return 1;
                 })
+            )
+            .then(literal("reroll")
+                .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    return rerollPlayers(context.getSource(), List.of(context.getSource().getPlayer()));
+                })
+                .then(argument("targets", EntityArgumentType.players())
+                    .executes(context -> {
+                        return rerollPlayers(context.getSource(), new ArrayList<>(EntityArgumentType.getPlayers(context, "targets")));
+                    })
+                )
+            )
+            .then(literal("gettrusted")
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    return showTrusted(context.getSource(), context.getSource().getPlayer());
+                })
+                .then(argument("target", EntityArgumentType.player())
+                    .executes(context -> {
+                        return showTrusted(context.getSource(), EntityArgumentType.getPlayer(context, "target"));
+                    })
+                )
+            )
+            .then(literal("getTrusted")
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    return showTrusted(context.getSource(), context.getSource().getPlayer());
+                })
+                .then(argument("target", EntityArgumentType.player())
+                    .executes(context -> {
+                        return showTrusted(context.getSource(), EntityArgumentType.getPlayer(context, "target"));
+                    })
+                )
             )
             .then(literal("gui")
                 .requires(source -> source.hasPermissionLevel(2))
@@ -107,6 +157,18 @@ public class InfuseCommandManager {
                 })
             )
             .then(literal("controls")
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                        return 0;
+                    }
+                    ServerPlayerEntity player = context.getSource().getPlayer();
+                    String controlMode = plugin.getDataManager().getControlMode(player.getUuid());
+                    Message msg = new Message(MessageType.CONTROL_MODE_NOTIFY);
+                    msg.applyPlaceholder("control_mode", controlMode);
+                    player.sendMessage(msg.toComponent());
+                    return 1;
+                })
                 .then(argument("mode", StringArgumentType.word())
                     .suggests(CONTROL_SUGGESTIONS)
                     .executes(context -> {
@@ -129,6 +191,30 @@ public class InfuseCommandManager {
                 )
             )
             .then(literal("giveeffect")
+                .requires(source -> source.hasPermissionLevel(2))
+                .then(argument("target", EntityArgumentType.player())
+                    .then(argument("effect", StringArgumentType.string())
+                        .suggests(EFFECT_SUGGESTIONS)
+                        .executes(context -> {
+                            ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                            String effectKey = StringArgumentType.getString(context, "effect");
+                            InfuseEffect mapping = InfuseEffect.fromString(effectKey);
+                            if (mapping == null) {
+                                context.getSource().sendMessage(new Message(MessageType.INFUSE_INVALID_PARAM).toComponent());
+                                return 0;
+                            }
+                            target.getInventory().insertStack(mapping.createItem());
+                            Message msg = new Message(MessageType.INFUSE_GIVEEFFECT_SUCCESS);
+                            msg.applyPlaceholder("effect_color", "");
+                            msg.applyPlaceholder("effect_name", mapping.getName().toString());
+                            target.sendMessage(msg.toComponent());
+                            context.getSource().sendMessage(Text.literal("Gave effect " + mapping.getKey() + " to " + target.getName().getString()));
+                            return 1;
+                        })
+                    )
+                )
+            )
+            .then(literal("giveEffect")
                 .requires(source -> source.hasPermissionLevel(2))
                 .then(argument("target", EntityArgumentType.player())
                     .then(argument("effect", StringArgumentType.string())
@@ -186,8 +272,82 @@ public class InfuseCommandManager {
                     )
                 )
             )
+            .then(literal("setEffect")
+                .requires(source -> source.hasPermissionLevel(2))
+                .then(argument("slot", StringArgumentType.word())
+                    .suggests(SLOT_SUGGESTIONS)
+                    .then(argument("target", EntityArgumentType.player())
+                        .then(argument("effect", StringArgumentType.string())
+                            .suggests(EFFECT_SUGGESTIONS)
+                            .executes(context -> {
+                                String slot = StringArgumentType.getString(context, "slot");
+                                if (!slot.equals("1") && !slot.equals("2")) {
+                                    Message msg = new Message(MessageType.INFUSE_INVALID_SLOT);
+                                    msg.applyPlaceholder("slot", slot);
+                                    context.getSource().sendMessage(msg.toComponent());
+                                    return 0;
+                                }
+                                ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                                String effectKey = StringArgumentType.getString(context, "effect");
+                                InfuseEffect mapping = InfuseEffect.fromString(effectKey);
+                                if (mapping == null) {
+                                    context.getSource().sendMessage(new Message(MessageType.INFUSE_INVALID_PARAM).toComponent());
+                                    return 0;
+                                }
+                                plugin.getEffectManager().setEffect(target, mapping, slot);
+                                Message msg = new Message(MessageType.INFUSE_SETEFFECT_SUCCESS);
+                                msg.applyPlaceholder("slot", slot);
+                                msg.applyPlaceholder("player_name", target.getName().getString());
+                                msg.applyPlaceholder("effect_name", mapping.getName().toString());
+                                context.getSource().sendMessage(msg.toComponent());
+                                return 1;
+                            })
+                        )
+                    )
+                )
+            )
             .then(literal("cleareffects")
                 .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity target = context.getSource().getPlayer();
+                    plugin.getDataManager().removeEffect(target.getUuid(), "1");
+                    plugin.getDataManager().removeEffect(target.getUuid(), "2");
+                    Message msg = new Message(MessageType.INFUSE_CLEAREFFECTS_SUCCESS);
+                    msg.applyPlaceholder("player_name", target.getName().getString());
+                    context.getSource().sendMessage(msg.toComponent());
+                    return 1;
+                })
+                .then(argument("target", EntityArgumentType.player())
+                    .executes(context -> {
+                        ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
+                        plugin.getDataManager().removeEffect(target.getUuid(), "1");
+                        plugin.getDataManager().removeEffect(target.getUuid(), "2");
+                        Message msg = new Message(MessageType.INFUSE_CLEAREFFECTS_SUCCESS);
+                        msg.applyPlaceholder("player_name", target.getName().getString());
+                        context.getSource().sendMessage(msg.toComponent());
+                        return 1;
+                    })
+                )
+            )
+            .then(literal("clearEffects")
+                .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity target = context.getSource().getPlayer();
+                    plugin.getDataManager().removeEffect(target.getUuid(), "1");
+                    plugin.getDataManager().removeEffect(target.getUuid(), "2");
+                    Message msg = new Message(MessageType.INFUSE_CLEAREFFECTS_SUCCESS);
+                    msg.applyPlaceholder("player_name", target.getName().getString());
+                    context.getSource().sendMessage(msg.toComponent());
+                    return 1;
+                })
                 .then(argument("target", EntityArgumentType.player())
                     .executes(context -> {
                         ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
@@ -202,6 +362,18 @@ public class InfuseCommandManager {
             )
             .then(literal("cooldown")
                 .requires(source -> source.hasPermissionLevel(2))
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(Text.literal("Invalid target. Please specify a player."));
+                        return 0;
+                    }
+                    ServerPlayerEntity target = context.getSource().getPlayer();
+                    CooldownManager.removeAllCooldowns(target.getUuid());
+                    Message msg = new Message(MessageType.INFUSE_COOLDOWN_SUCCESS);
+                    msg.applyPlaceholder("player_name", target.getName().getString());
+                    context.getSource().sendMessage(msg.toComponent());
+                    return 1;
+                })
                 .then(argument("target", EntityArgumentType.player())
                     .executes(context -> {
                         ServerPlayerEntity target = EntityArgumentType.getPlayer(context, "target");
@@ -214,6 +386,106 @@ public class InfuseCommandManager {
                 )
             )
         );
+    }
+
+    private int rerollPlayers(ServerCommandSource source, List<ServerPlayerEntity> targets) {
+        List<InfuseEffect> joinEffects = plugin.getMainConfig().joinEffects();
+        if (joinEffects.isEmpty()) {
+            joinEffects = new ArrayList<>(InfuseEffect.getRegisteredEffects().values().stream().filter(e -> !e.isAugmented()).toList());
+        }
+
+        for (ServerPlayerEntity target : targets) {
+            plugin.getDataManager().removeEffect(target.getUuid(), "1");
+            plugin.getDataManager().removeEffect(target.getUuid(), "2");
+            if (!joinEffects.isEmpty()) {
+                InfuseEffect effect = joinEffects.get((int) (Math.random() * joinEffects.size()));
+                plugin.getEffectManager().setEffect(target, effect, "1");
+            }
+        }
+
+        if (targets.size() == 1) {
+            source.sendMessage(Text.literal("Rerolled " + targets.get(0).getName().getString() + "'s join effect."));
+        } else {
+            source.sendMessage(Text.literal("Rerolled " + targets.size() + " player's join effects."));
+        }
+        return 1;
+    }
+
+    private int showTrusted(ServerCommandSource source, ServerPlayerEntity target) {
+        if (source.isExecutedByPlayer() && source.getPlayer().getUuid().equals(target.getUuid())) {
+            source.sendMessage(Text.literal("You trust:"));
+        } else {
+            source.sendMessage(Text.literal(target.getName().getString() + " trusts:"));
+        }
+        for (java.util.UUID uuid : plugin.getDataManager().getTrusted(target.getUuid())) {
+            ServerPlayerEntity p = source.getServer().getPlayerManager().getPlayer(uuid);
+            String name = (p != null) ? p.getName().getString() : uuid.toString();
+            source.sendMessage(Text.literal("- " + name));
+        }
+        return 1;
+    }
+
+    private void registerSparkCommands(CommandDispatcher<ServerCommandSource> dispatcher) {
+        dispatcher.register(literal("spark")
+            .executes(context -> {
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                    return 0;
+                }
+                return activateSpark(context.getSource().getPlayer(), "1");
+            })
+            .then(argument("slot", StringArgumentType.word())
+                .suggests(SLOT_SUGGESTIONS)
+                .executes(context -> {
+                    if (!context.getSource().isExecutedByPlayer()) {
+                        context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                        return 0;
+                    }
+                    String slot = StringArgumentType.getString(context, "slot");
+                    return activateSpark(context.getSource().getPlayer(), slot);
+                })
+            )
+        );
+
+        dispatcher.register(literal("lspark")
+            .executes(context -> {
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                    return 0;
+                }
+                return activateSpark(context.getSource().getPlayer(), "1");
+            })
+        );
+
+        dispatcher.register(literal("rspark")
+            .executes(context -> {
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                    return 0;
+                }
+                return activateSpark(context.getSource().getPlayer(), "2");
+            })
+        );
+    }
+
+    private int activateSpark(ServerPlayerEntity player, String slot) {
+        if (!slot.equals("1") && !slot.equals("2")) {
+            Message msg = new Message(MessageType.SLOT_EMPTY);
+            msg.applyPlaceholder("slot", slot);
+            player.sendMessage(msg.toComponent());
+            return 0;
+        }
+
+        InfuseEffect effect = plugin.getDataManager().getEffect(player.getUuid(), slot);
+        if (effect == null) {
+            Message msg = new Message(MessageType.SLOT_EMPTY);
+            msg.applyPlaceholder("slot", slot);
+            player.sendMessage(msg.toComponent());
+            return 0;
+        }
+
+        effect.activateSpark(player);
+        return 1;
     }
 
     private void registerControlsCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
@@ -481,6 +753,29 @@ public class InfuseCommandManager {
 
     private void registerSwapEffectsCommand(CommandDispatcher<ServerCommandSource> dispatcher) {
         dispatcher.register(literal("swapeffects")
+            .executes(context -> {
+                if (!context.getSource().isExecutedByPlayer()) {
+                    context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
+                    return 0;
+                }
+                ServerPlayerEntity player = context.getSource().getPlayer();
+                InfuseEffect effect1 = plugin.getDataManager().getEffect(player.getUuid(), "1");
+                InfuseEffect effect2 = plugin.getDataManager().getEffect(player.getUuid(), "2");
+
+                if (effect1 == null && effect2 == null) {
+                    player.sendMessage(new Message(MessageType.SWAP_NO_EFFECTS).toComponent());
+                    return 0;
+                }
+
+                plugin.getDataManager().setEffect(player.getUuid(), "1", effect2);
+                plugin.getDataManager().setEffect(player.getUuid(), "2", effect1);
+
+                player.sendMessage(new Message(MessageType.SWAP_SUCCESS).toComponent());
+                return 1;
+            })
+        );
+
+        dispatcher.register(literal("swap")
             .executes(context -> {
                 if (!context.getSource().isExecutedByPlayer()) {
                     context.getSource().sendMessage(new Message(MessageType.ERROR_NOT_PLAYER).toComponent());
